@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CledBT</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PDF.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <!-- jsPDF library for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <!-- html2canvas for rendering DOM to image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- MathJax for LaTeX rendering -->
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']]
+        },
+        svg: {
+          fontCache: 'none'
+        }
+      };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide-react@0.292.0/dist/lucide-react.js"></script>
+    <style>
+        /* Custom Styles */
+        :root {
+            --bg-light: #f7fafc;
+            --text-light: #1a202c;
+            --primary-light: #4299e1;
+            --primary-dark-light: #2b6cb0;
+            --border-light: #e2e8f0;
+            --card-light: #ffffff;
+            --hover-light: #edf2f7;
+
+            /* NEW: Improved Dark Mode Palette */
+            --bg-dark: #121212;
+            --text-dark: #e0e0e0;
+            --primary-dark: #63b3ed;
+            --primary-dark-dark: #90cdf4;
+            --border-dark: #2d2d2d;
+            --card-dark: #1e1e1e;
+            --hover-dark: #2a2a2a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .light-mode {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
+
+        .dark-mode {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+        
+        .card {
+            background-color: var(--card-light);
+            border: 1px solid var(--border-light);
+        }
+        .dark-mode .card {
+            background-color: var(--card-dark);
+            border-color: var(--border-dark);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-light);
+            color: white;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-dark-light);
+        }
+        .dark-mode .btn-primary {
+            background-color: var(--primary-dark);
+            color: #1a202c;
+        }
+        .dark-mode .btn-primary:hover {
+            background-color: var(--primary-dark-dark);
+        }
+        
+        .btn-secondary {
+             background-color: #e2e8f0;
+             color: #2d3748;
+             transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #cbd5e0;
+        }
+        .dark-mode .btn-secondary {
+            background-color: #333;
+            color: var(--text-dark);
+        }
+        .dark-mode .btn-secondary:hover {
+             background-color: #444;
+        }
+
+        .form-input {
+            border: 1px solid var(--border-light);
+            background-color: #fff;
+        }
+        .dark-mode .form-input {
+             border-color: var(--border-dark);
+             background-color: var(--card-dark);
+             color: var(--text-dark);
+        }
+        .dark-mode .form-input::placeholder {
+            color: #718096;
+        }
+        
+        #pdf-canvas-container {
+            position: relative;
+            cursor: crosshair;
+        }
+        #text-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        #text-layer > span {
+            position: absolute;
+            white-space: pre;
+            transform-origin: 0% 0%;
+        }
+        #crop-box {
+            position: absolute;
+            border: 2px dashed #ff0000;
+            box-sizing: border-box;
+            pointer-events: none;
+            display: none;
+        }
+
+        /* Test page specific styles */
+        .question-status-answered { background-color: #38a169; color: white; }
+        .question-status-not-answered { background-color: #e53e3e; color: white; }
+        .question-status-review { background-color: #805ad5; color: white; }
+        .question-status-not-visited { background-color: #e2e8f0; color: #2d3748; }
+        .dark-mode .question-status-not-visited { background-color: #4a5568; color: #e2e8f0; }
+        .question-status-current { border: 2px solid var(--primary-light); }
+        .dark-mode .question-status-current { border-color: var(--primary-dark); }
+        
+        .option-label.selected {
+            background-color: var(--primary-light);
+            color: white;
+            border-color: var(--primary-dark-light);
+        }
+        .dark-mode .option-label.selected {
+            background-color: var(--primary-dark);
+            color: #1a202c;
+            border-color: var(--primary-dark-dark);
+        }
+        
+        #manual-q-preview {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .section-header {
+            grid-column: 1 / -1;
+            font-weight: bold;
+            padding: 4px;
+            margin-top: 8px;
+            border-bottom: 2px solid var(--border-light);
+        }
+        .dark-mode .section-header {
+            border-bottom-color: var(--border-dark);
+        }
+        
+        /* NEW: Dark Mode Result Colors */
+        .status-correct-bg { background-color: #c6f6d5; }
+        .dark-mode .status-correct-bg { background-color: #2f855a40; }
+        .status-incorrect-bg { background-color: #fed7d7; }
+        .dark-mode .status-incorrect-bg { background-color: #c5303040; }
+        .status-unattempted-bg { background-color: #e2e8f0; }
+        .dark-mode .status-unattempted-bg { background-color: #4a556840; }
+        
+        .subject-correct { color: #38a169; }
+        .dark-mode .subject-correct { color: #68d391; }
+        .subject-incorrect { color: #e53e3e; }
+        .dark-mode .subject-incorrect { color: #fc8181; }
+
+    </style>
+</head>
+<body class="light-mode">
+
+    <!-- Main Container -->
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="card shadow-md p-4 flex justify-between items-center sticky top-0 z-10">
+            <h1 class="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400">CledBT</h1>
+            <div class="flex items-center space-x-4">
+                 <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <svg id="theme-icon-light" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                    <svg id="theme-icon-dark" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon hidden"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                 </button>
+                 <span id="test-timer" class="font-mono text-lg font-bold hidden">03:00:00</span>
+            </div>
+        </header>
+        
+        <!-- Page Content -->
+        <main class="flex-grow p-4 md:p-8">
+
+            <!-- PAGE 1: Upload & Setup Page -->
+            <div id="setup-page">
+                <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Left Side: Upload & Crop -->
+                    <div class="card p-6 rounded-lg shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-4 border-b pb-2">1. Add Questions</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="pdf-upload" class="block text-sm font-medium mb-2">From PDF:</label>
+                                <input type="file" id="pdf-upload" accept=".pdf" class="w-full text-sm form-input rounded-md file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/50 dark:file:text-blue-300 dark:hover:file:bg-blue-900/80">
+                            </div>
+                             <div>
+                                <label class="block text-sm font-medium mb-2">Manually:</label>
+                                <button id="manual-add-btn" class="btn-secondary w-full py-2 rounded-md">Type Question or use LaTeX</button>
+                             </div>
+                        </div>
+
+                        <div id="pdf-viewer" class="mt-4 border rounded-lg overflow-auto max-h-[60vh] hidden">
+                            <div class="sticky top-0 card p-2 flex items-center justify-center space-x-4 z-10">
+                                <button id="prev-page" class="btn-secondary px-3 py-1 rounded-md">&lt; Prev</button>
+                                <span>Page: <span id="page-num"></span> / <span id="page-count"></span></span>
+                                <button id="next-page" class="btn-secondary px-3 py-1 rounded-md">Next &gt;</button>
+                                <div class="flex items-center space-x-2 ml-auto">
+                                    <button id="zoom-out-btn" class="btn-secondary w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg">-</button>
+                                    <span id="zoom-level" class="w-12 text-center text-sm font-semibold">150%</span>
+                                    <button id="zoom-in-btn" class="btn-secondary w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg">+</button>
+                                </div>
+                            </div>
+                            <div id="pdf-canvas-container" class="relative">
+                                <canvas id="pdf-canvas"></canvas>
+                                <div id="text-layer"></div>
+                                <div id="crop-box"></div>
+                            </div>
+                        </div>
+                         <p id="crop-instructions" class="text-sm text-gray-500 mt-4 hidden">Click and drag on the PDF page to select a question area. A setup form will appear below.</p>
+                    </div>
+
+                    <!-- Right Side: Question List & Test Start -->
+                    <div class="card p-6 rounded-lg shadow-lg flex flex-col">
+                        <h2 class="text-2xl font-semibold mb-4 border-b pb-2">2. Manage Questions</h2>
+                         <div id="question-setup-form" class="hidden mb-4 p-4 border rounded-md bg-gray-50 dark:bg-gray-800/50">
+                            <!-- MODIFIED: Added preview container -->
+                            <h3 class="font-bold mb-2">Cropped Image(s) Preview</h3>
+                            <div id="crop-preview-container" class="mb-4 flex flex-wrap gap-2 border p-2 rounded-md bg-white dark:bg-gray-700 min-h-[50px]">
+                                <!-- Previews will appear here -->
+                            </div>
+                            <h3 class="font-bold mb-2">Setup Cropped Question</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm">Subject</label>
+                                    <select id="q-subject" class="form-input w-full p-2 rounded-md">
+                                        <option>Physics</option>
+                                        <option>Chemistry</option>
+                                        <option>Math</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm">Type</label>
+                                    <select id="q-type" class="form-input w-full p-2 rounded-md">
+                                        <option value="SingleCorrect">Single Correct</option>
+                                        <option value="MultipleCorrect">Multiple Correct</option>
+                                        <option value="Numerical">Numerical</option>
+                                    </select>
+                                </div>
+                            </div>
+                             <div class="mt-4 flex justify-end space-x-2">
+                                 <button id="cancel-crop-btn" class="btn-secondary px-4 py-2 rounded-md text-sm">Cancel</button>
+                                 <!-- MODIFIED: Changed button text for clarity -->
+                                 <button id="add-question-btn" class="btn-primary px-4 py-2 rounded-md text-sm">Create Question from Crop(s)</button>
+                            </div>
+                        </div>
+                        
+                        <div id="question-list-container" class="flex-grow">
+                            <h3 class="font-semibold mb-2">Question Bank (<span id="question-count-display">0</span>)</h3>
+                             <div class="max-h-[45vh] overflow-y-auto pr-2" id="question-list">
+                                <!-- Question items will be here -->
+                             </div>
+                        </div>
+                        
+                        <div class="mt-6 border-t pt-4">
+                            <div class="flex flex-col space-y-2">
+                                <button id="start-test-btn" class="btn-primary w-full px-4 py-3 rounded-md font-bold disabled:opacity-50 disabled:cursor-not-allowed">Start Test</button>
+                                <div class="grid grid-cols-2 gap-2">
+                                     <button id="settings-btn" class="btn-secondary w-full px-4 py-2 rounded-md">Settings</button>
+                                     <button id="set-answer-key-btn" class="btn-secondary w-full py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed">Set Answer Key</button>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    <button id="export-json-btn" class="btn-secondary w-full px-4 py-2 rounded-md">Export JSON</button>
+                                    <button id="download-pdf-btn" class="btn-secondary w-full px-4 py-2 rounded-md">Download Qs PDF</button>
+                                    <label for="import-json-input" class="btn-secondary w-full px-4 py-2 rounded-md text-center cursor-pointer">Import JSON</label>
+                                    <input type="file" id="import-json-input" class="hidden" accept=".json">
+                                </div>
+                                <div class="border-t pt-2 mt-2">
+                                     <button id="clear-data-btn" class="bg-red-100 text-red-700 w-full px-4 py-2 rounded-md text-sm font-semibold hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900/80">Clear All Saved Data</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 2: Test Page -->
+            <div id="test-page" class="hidden">
+                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <!-- Left: Question Area -->
+                    <div class="lg:col-span-3 card rounded-lg shadow-lg p-6">
+                        <div class="mb-4">
+                            <span id="q-number-subject" class="font-bold text-lg"></span>
+                        </div>
+                        <div class="border rounded-md p-2 overflow-auto max-h-[60vh]">
+                             <img id="q-image" src="" alt="Question Image" class="mx-auto">
+                        </div>
+                        <div id="q-options-area" class="mt-6 space-y-3">
+                            <!-- Radio/Checkbox options will be rendered here -->
+                        </div>
+                         <div id="q-numerical-area" class="mt-6">
+                             <input type="text" id="q-numerical-input" placeholder="Enter your answer" class="form-input p-2 rounded-md w-full md:w-1/2">
+                         </div>
+                    </div>
+                    
+                    <!-- Right: Navigation & Info -->
+                    <div class="card rounded-lg shadow-lg p-4">
+                        <h3 class="font-bold mb-2">Question Panel</h3>
+                        <div id="q-nav-panel" class="grid grid-cols-5 gap-2 mb-4 max-h-[50vh] overflow-y-auto">
+                            <!-- Question nav buttons -->
+                        </div>
+                        <div class="text-xs space-y-2 my-4">
+                            <div class="flex items-center"><span class="w-4 h-4 rounded-full bg-green-500 mr-2"></span> Answered</div>
+                            <div class="flex items-center"><span class="w-4 h-4 rounded-full bg-red-500 mr-2"></span> Not Answered</div>
+                            <div class="flex items-center"><span class="w-4 h-4 rounded-full bg-purple-700 mr-2"></span> Marked for Review</div>
+                            <div class="flex items-center"><span class="w-4 h-4 rounded-full bg-gray-300 dark:bg-gray-600 mr-2"></span> Not Visited</div>
+                        </div>
+                        <div class="mt-auto pt-4 border-t space-y-2">
+                             <button id="save-next-btn" class="btn-primary w-full py-2 rounded-md">Save & Next</button>
+                             <button id="mark-review-btn" class="btn-secondary w-full py-2 rounded-md">Mark for Review & Next</button>
+                             <button id="clear-response-btn" class="btn-secondary w-full py-2 rounded-md">Clear Response</button>
+                             <button id="submit-test-btn" class="bg-red-600 text-white w-full py-2 rounded-md mt-4 hover:bg-red-700">Submit Test</button>
+                        </div>
+                    </div>
+                 </div>
+            </div>
+
+            <!-- PAGE 3: Result Page -->
+            <div id="result-page" class="hidden max-w-4xl mx-auto">
+                 <div class="card rounded-lg shadow-lg p-8">
+                     <h2 class="text-3xl font-bold text-center mb-2">Test Result</h2>
+                     <div class="text-center mb-6">
+                         <p class="text-lg">Total Score</p>
+                         <p id="total-score" class="text-5xl font-bold text-blue-600 dark:text-blue-400"></p>
+                     </div>
+                     
+                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-8">
+                         <div class="p-4 status-correct-bg rounded-lg">
+                             <p class="font-semibold">Correct</p>
+                             <p id="correct-count" class="text-2xl font-bold"></p>
+                         </div>
+                         <div class="p-4 status-incorrect-bg rounded-lg">
+                             <p class="font-semibold">Incorrect</p>
+                             <p id="incorrect-count" class="text-2xl font-bold"></p>
+                         </div>
+                         <div class="p-4 status-unattempted-bg rounded-lg">
+                             <p class="font-semibold">Unattempted</p>
+                             <p id="unattempted-count" class="text-2xl font-bold"></p>
+                         </div>
+                     </div>
+                     
+                     <h3 class="text-xl font-semibold mb-4 text-center">Subject-wise Performance</h3>
+                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                         <div id="physics-results" class="card p-4 rounded-lg"></div>
+                         <div id="chemistry-results" class="card p-4 rounded-lg"></div>
+                         <div id="math-results" class="card p-4 rounded-lg"></div>
+                     </div>
+
+                     <div class="text-center space-x-2">
+                        <button id="review-answers-btn" class="btn-primary px-6 py-2 rounded-md">Review Answers</button>
+                        <button id="back-to-home-btn" class="btn-secondary px-6 py-2 rounded-md">Back to Home</button>
+                        <button id="download-result-btn" class="btn-secondary px-6 py-2 rounded-md">Download Result (PDF)</button>
+                     </div>
+                 </div>
+                 <!-- Review filter controls -->
+                 <div id="review-controls" class="hidden mt-8">
+                    <h2 class="text-2xl font-bold text-center mb-4">Answer Review</h2>
+                    <div class="flex justify-center items-center flex-wrap gap-2 mb-6">
+                        <button data-filter="all" class="review-filter-btn btn-primary px-4 py-2 rounded-md text-sm">All</button>
+                        <button data-filter="correct" class="review-filter-btn btn-secondary px-4 py-2 rounded-md text-sm">Correct</button>
+                        <button data-filter="incorrect" class="review-filter-btn btn-secondary px-4 py-2 rounded-md text-sm">Incorrect</button>
+                        <button data-filter="unattempted" class="review-filter-btn btn-secondary px-4 py-2 rounded-md text-sm">Unattempted</button>
+                    </div>
+                 </div>
+                 <div id="review-section" class="mt-2">
+                     <!-- Review questions will be appended here -->
+                 </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Manual Add Question Modal -->
+    <div id="manual-add-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="card rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <h2 class="text-2xl font-bold mb-4">Add Question Manually</h2>
+            <div class="flex-grow overflow-y-auto pr-4">
+                <div class="mb-4">
+                    <label for="manual-q-text" class="block font-semibold mb-2">Question Text (supports LaTeX with $...$)</label>
+                    <textarea id="manual-q-text" rows="5" class="form-input w-full p-2 rounded-md" placeholder="e.g., What is the value of $\int_0^1 x^2 dx$?"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block font-semibold mb-2">Live Preview</label>
+                    <div id="manual-q-preview" class="p-4 border rounded-md min-h-[5rem]"></div>
+                </div>
+                <div id="manual-q-setup" class="space-y-4">
+                     <!-- This will contain the subject/type/options form -->
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium">Subject</label>
+                            <select id="manual-q-subject" class="form-input w-full p-2 rounded-md mt-1">
+                                <option>Physics</option>
+                                <option>Chemistry</option>
+                                <option>Math</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium">Type</label>
+                            <select id="manual-q-type" class="form-input w-full p-2 rounded-md mt-1">
+                                <option value="SingleCorrect">Single Correct</option>
+                                <option value="MultipleCorrect">Multiple Correct</option>
+                                <option value="Numerical">Numerical</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-2 border-t pt-4">
+                <button id="manual-cancel-btn" class="btn-secondary px-6 py-2 rounded-md">Cancel</button>
+                <button id="manual-save-btn" class="btn-primary px-6 py-2 rounded-md">Save Question</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Answer Key Modal -->
+    <div id="answer-key-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="card rounded-lg shadow-xl p-6 w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <h2 class="text-2xl font-bold mb-4">Set Answer Key</h2>
+            <div id="answer-key-list" class="flex-grow overflow-y-auto pr-4 space-y-4">
+                <!-- Answer key form will be generated here -->
+            </div>
+            <div class="mt-6 flex justify-end space-x-2 border-t pt-4">
+                <button id="answer-key-cancel-btn" class="btn-secondary px-6 py-2 rounded-md">Cancel</button>
+                <button id="answer-key-save-btn" class="btn-primary px-6 py-2 rounded-md">Save Answers</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="card rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <h2 class="text-2xl font-bold mb-4">Test Settings</h2>
+            <div class="flex-grow overflow-y-auto pr-4 space-y-6">
+                <div>
+                    <label for="test-duration" class="block font-semibold mb-2">Test Duration (minutes)</label>
+                    <input type="number" id="test-duration" class="form-input w-full p-2 rounded-md" min="1">
+                </div>
+                <div class="border-t pt-4">
+                    <h3 class="text-lg font-semibold mb-2">Marking Scheme</h3>
+                    <div class="space-y-4">
+                        <!-- Single Correct -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 border rounded-md">
+                            <h4 class="md:col-span-3 font-bold">Single Correct</h4>
+                            <div><label for="scq-correct" class="text-sm">Correct</label><input type="number" id="scq-correct" class="form-input w-full p-2 rounded-md mt-1"></div>
+                            <div><label for="scq-incorrect" class="text-sm">Incorrect</label><input type="number" id="scq-incorrect" class="form-input w-full p-2 rounded-md mt-1"></div>
+                        </div>
+                        <!-- Multiple Correct -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 border rounded-md">
+                            <h4 class="md:col-span-3 font-bold">Multiple Correct</h4>
+                            <div><label for="mcq-correct" class="text-sm">Correct</label><input type="number" id="mcq-correct" class="form-input w-full p-2 rounded-md mt-1"></div>
+                            <div><label for="mcq-incorrect" class="text-sm">Incorrect</label><input type="number" id="mcq-incorrect" class="form-input w-full p-2 rounded-md mt-1"></div>
+                        </div>
+                        <!-- Numerical -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 border rounded-md">
+                            <h4 class="md:col-span-3 font-bold">Numerical</h4>
+                            <div><label for="num-correct" class="text-sm">Correct</label><input type="number" id="num-correct" class="form-input w-full p-2 rounded-md mt-1"></div>
+                            <div><label for="num-incorrect" class="text-sm">Incorrect</label><input type="number" id="num-incorrect" class="form-input w-full p-2 rounded-md mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-2 border-t pt-4">
+                <button id="settings-cancel-btn" class="btn-secondary px-6 py-2 rounded-md">Cancel</button>
+                <button id="settings-save-btn" class="btn-primary px-6 py-2 rounded-md">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div id="instructions-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="card rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <h2 class="text-2xl font-bold mb-4">Test Instructions</h2>
+            <div id="instructions-content" class="flex-grow overflow-y-auto pr-4 space-y-4">
+                <!-- Instructions will be dynamically populated here -->
+            </div>
+            <div class="mt-6 flex justify-end space-x-2 border-t pt-4">
+                <button id="instructions-cancel-btn" class="btn-secondary px-6 py-2 rounded-md">Cancel</button>
+                <button id="instructions-start-btn" class="btn-primary px-6 py-2 rounded-md">Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set worker path for PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
+
+        // DOM Elements
+        const setupPage = document.getElementById('setup-page');
+        const testPage = document.getElementById('test-page');
+        const resultPage = document.getElementById('result-page');
+        const pdfUpload = document.getElementById('pdf-upload');
+        const pdfViewer = document.getElementById('pdf-viewer');
+        const pdfCanvas = document.getElementById('pdf-canvas');
+        const textLayerDiv = document.getElementById('text-layer');
+        const cropInstructions = document.getElementById('crop-instructions');
+        const pageNumDisplay = document.getElementById('page-num');
+        const pageCountDisplay = document.getElementById('page-count');
+        const prevPageBtn = document.getElementById('prev-page');
+        const nextPageBtn = document.getElementById('next-page');
+        const zoomOutBtn = document.getElementById('zoom-out-btn');
+        const zoomInBtn = document.getElementById('zoom-in-btn');
+        const zoomLevel = document.getElementById('zoom-level');
+        const cropBox = document.getElementById('crop-box');
+        const questionSetupForm = document.getElementById('question-setup-form');
+        // NEW: Added crop preview container
+        const cropPreviewContainer = document.getElementById('crop-preview-container');
+        const qSubject = document.getElementById('q-subject');
+        const qType = document.getElementById('q-type');
+        const addQuestionBtn = document.getElementById('add-question-btn');
+        const cancelCropBtn = document.getElementById('cancel-crop-btn');
+        const questionList = document.getElementById('question-list');
+        const questionCountDisp = document.getElementById('question-count-display');
+        const startTestBtn = document.getElementById('start-test-btn');
+        const setAnswerKeyBtn = document.getElementById('set-answer-key-btn');
+        const settingsBtn = document.getElementById('settings-btn');
+        const exportJsonBtn = document.getElementById('export-json-btn');
+        const downloadPdfBtn = document.getElementById('download-pdf-btn');
+        const importJsonInput = document.getElementById('import-json-input');
+        const clearDataBtn = document.getElementById('clear-data-btn');
+        const manualAddBtn = document.getElementById('manual-add-btn');
+        const testTimerDisplay = document.getElementById('test-timer');
+        const qNumberSubject = document.getElementById('q-number-subject');
+        const qImage = document.getElementById('q-image');
+        const qOptionsArea = document.getElementById('q-options-area');
+        const qNumericalArea = document.getElementById('q-numerical-area');
+        const qNavPanel = document.getElementById('q-nav-panel');
+        const saveNextBtn = document.getElementById('save-next-btn');
+        const markReviewBtn = document.getElementById('mark-review-btn');
+        const clearResponseBtn = document.getElementById('clear-response-btn');
+        const submitTestBtn = document.getElementById('submit-test-btn');
+
+        // Manual Add Modal Elements
+        const manualAddModal = document.getElementById('manual-add-modal');
+        const manualQText = document.getElementById('manual-q-text');
+        const manualQPreview = document.getElementById('manual-q-preview');
+        const manualQSubject = document.getElementById('manual-q-subject');
+        const manualQType = document.getElementById('manual-q-type');
+        const manualCancelBtn = document.getElementById('manual-cancel-btn');
+        const manualSaveBtn = document.getElementById('manual-save-btn');
+        
+        // Answer Key Modal Elements
+        const answerKeyModal = document.getElementById('answer-key-modal');
+        const answerKeyList = document.getElementById('answer-key-list');
+        const answerKeyCancelBtn = document.getElementById('answer-key-cancel-btn');
+        const answerKeySaveBtn = document.getElementById('answer-key-save-btn');
+
+        // Settings Modal Elements
+        const settingsModal = document.getElementById('settings-modal');
+        const settingsCancelBtn = document.getElementById('settings-cancel-btn');
+        const settingsSaveBtn = document.getElementById('settings-save-btn');
+
+        // Instructions Modal Elements
+        const instructionsModal = document.getElementById('instructions-modal');
+        const instructionsContent = document.getElementById('instructions-content');
+        const instructionsCancelBtn = document.getElementById('instructions-cancel-btn');
+        const instructionsStartBtn = document.getElementById('instructions-start-btn');
+        
+        // State variables
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let scale = 1.5;
+        let ctx = pdfCanvas.getContext('2d');
+        let questions = [];
+        let answerKey = {};
+        let currentTestQuestions = [];
+        let userResponses = {};
+        let questionStatus = {}; // not-visited, not-answered, answered, review
+        let currentQuestionIndex = 0;
+        let timerInterval;
+        let timeLeft;
+        let testSettings = {
+            duration: 180,
+            marking: {
+                SingleCorrect: { correct: 4, incorrect: -1 },
+                MultipleCorrect: { correct: 4, incorrect: -1 },
+                Numerical: { correct: 4, incorrect: 0 }
+            }
+        };
+
+        // Cropping state
+        let cropping = false;
+        let cropStart = {};
+        let cropEnd = {};
+        // MODIFIED: Changed to an array to hold multiple images
+        let tempCroppedImages = [];
+
+        // --- THEME TOGGLE ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        const lightIcon = document.getElementById('theme-icon-light');
+        const darkIcon = document.getElementById('theme-icon-dark');
+
+        const applyTheme = (theme) => {
+            if (theme === 'dark') {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                lightIcon.classList.add('hidden');
+                darkIcon.classList.remove('hidden');
+            } else {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                lightIcon.classList.remove('hidden');
+                darkIcon.classList.add('hidden');
+            }
+        };
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        });
+
+        // --- PAGE/VIEW MANAGEMENT ---
+        function showPage(pageId) {
+            setupPage.classList.add('hidden');
+            testPage.classList.add('hidden');
+            resultPage.classList.add('hidden');
+            testTimerDisplay.classList.add('hidden');
+
+            document.getElementById(pageId).classList.remove('hidden');
+            if (pageId === 'test-page') {
+                testTimerDisplay.classList.remove('hidden');
+            }
+        }
+
+        // --- PDF HANDLING AND CROPPING ---
+        function updateZoomDisplay() {
+            zoomLevel.textContent = `${Math.round(scale * 100)}%`;
+        }
+        
+        function renderPage(num) {
+            pageRendering = true;
+            pdfDoc.getPage(num).then(page => {
+                const viewport = page.getViewport({ scale });
+                pdfCanvas.height = viewport.height;
+                pdfCanvas.width = viewport.width;
+
+                textLayerDiv.innerHTML = '';
+                textLayerDiv.style.width = viewport.width + 'px';
+                textLayerDiv.style.height = viewport.height + 'px';
+
+                const renderContext = { canvasContext: ctx, viewport: viewport };
+                const renderTask = page.render(renderContext);
+                const textContentTask = page.getTextContent();
+
+                Promise.all([renderTask.promise, textContentTask]).then(([_, textContent]) => {
+                    pdfjsLib.renderTextLayer({
+                        textContentSource: textContent,
+                        container: textLayerDiv,
+                        viewport: viewport,
+                        textDivs: []
+                    }).promise.then(() => {
+                        pageRendering = false;
+                        if (pageNumPending !== null) {
+                            renderPage(pageNumPending);
+                            pageNumPending = null;
+                        }
+                    });
+                }).catch(err => { console.error("Error during page rendering:", err); pageRendering = false; });
+
+            }).catch(err => { console.error("Error getting PDF page:", err); pageRendering = false; });
+            pageNumDisplay.textContent = num;
+        }
+
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
+            } else {
+                renderPage(num);
+            }
+        }
+
+        pdfUpload.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file.type !== 'application/pdf') {
+                alert('Please select a PDF file.');
+                return;
+            }
+            const fileReader = new FileReader();
+            fileReader.onload = function() {
+                const typedarray = new Uint8Array(this.result);
+                pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+                    pdfDoc = pdf;
+                    pageCountDisplay.textContent = pdfDoc.numPages;
+                    pageNum = 1;
+                    renderPage(pageNum);
+                    pdfViewer.classList.remove('hidden');
+                    cropInstructions.classList.remove('hidden');
+                });
+            };
+            fileReader.readAsArrayBuffer(file);
+        });
+
+        prevPageBtn.addEventListener('click', () => { if (pageNum <= 1) return; pageNum--; queueRenderPage(pageNum); });
+        nextPageBtn.addEventListener('click', () => { if (pageNum >= pdfDoc.numPages) return; pageNum++; queueRenderPage(pageNum); });
+        zoomInBtn.addEventListener('click', () => { if (scale >= 3.0) return; scale += 0.25; updateZoomDisplay(); queueRenderPage(pageNum); });
+        zoomOutBtn.addEventListener('click', () => { if (scale <= 0.5) return; scale -= 0.25; updateZoomDisplay(); queueRenderPage(pageNum); });
+
+        pdfCanvas.addEventListener('mousedown', e => {
+            if (!pdfDoc) return;
+            cropping = true;
+            const rect = pdfCanvas.getBoundingClientRect();
+            cropStart.x = e.clientX - rect.left;
+            cropStart.y = e.clientY - rect.top;
+            Object.assign(cropBox.style, { left: `${cropStart.x}px`, top: `${cropStart.y}px`, width: '0px', height: '0px', display: 'block' });
+        });
+        
+        pdfCanvas.addEventListener('mousemove', e => {
+            if (!cropping) return;
+            const rect = pdfCanvas.getBoundingClientRect();
+            cropEnd.x = e.clientX - rect.left;
+            cropEnd.y = e.clientY - rect.top;
+            const width = Math.abs(cropEnd.x - cropStart.x);
+            const height = Math.abs(cropEnd.y - cropStart.y);
+            const left = Math.min(cropStart.x, cropEnd.x);
+            const top = Math.min(cropStart.y, cropEnd.y);
+            Object.assign(cropBox.style, { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` });
+        });
+        
+        pdfCanvas.addEventListener('mouseup', e => {
+            if (!cropping) return;
+            cropping = false;
+            cropBox.style.display = 'none';
+            const rect = pdfCanvas.getBoundingClientRect();
+            cropEnd.x = e.clientX - rect.left;
+            cropEnd.y = e.clientY - rect.top;
+            const width = Math.abs(cropEnd.x - cropStart.x);
+            const height = Math.abs(cropEnd.y - cropStart.y);
+            
+            if (width < 10 || height < 10) return;
+
+            const left = Math.min(cropStart.x, cropEnd.x);
+            const top = Math.min(cropStart.y, cropEnd.y);
+            const CROP_SCALE = 2;
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width * CROP_SCALE;
+            tempCanvas.height = height * CROP_SCALE;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            tempCtx.fillStyle = 'white';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            tempCtx.drawImage(pdfCanvas, left, top, width, height, 0, 0, tempCanvas.width, tempCanvas.height);
+
+            const textLayerSpans = textLayerDiv.querySelectorAll('span');
+            textLayerSpans.forEach(span => {
+                const style = getComputedStyle(span);
+                const spanRect = span.getBoundingClientRect();
+                const spanLeft = spanRect.left - rect.left;
+                const spanTop = spanRect.top - rect.top;
+                
+                if (spanLeft < left + width && spanLeft + spanRect.width > left && spanTop < top + height && spanTop + spanRect.height > top) {
+                    const fontSize = parseFloat(style.fontSize);
+                    if (isNaN(fontSize)) return;
+                    tempCtx.font = style.font.replace(`${fontSize}px`, `${fontSize * CROP_SCALE}px`);
+                    tempCtx.fillStyle = style.color;
+                    tempCtx.textAlign = 'left';
+                    tempCtx.textBaseline = 'hanging';
+                    const drawX = (spanLeft - left) * CROP_SCALE;
+                    const drawY = (spanTop - top) * CROP_SCALE;
+                    tempCtx.fillText(span.textContent, drawX, drawY);
+                }
+            });
+
+            // MODIFIED: Push new crop to array and render previews
+            const newCropDataUrl = tempCanvas.toDataURL('image/jpeg', 0.9);
+            tempCroppedImages.push(newCropDataUrl);
+            renderCropPreviews();
+            questionSetupForm.classList.remove('hidden');
+            questionSetupForm.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // --- QUESTION SETUP ---
+        
+        // NEW: Function to render the preview of cropped images
+        function renderCropPreviews() {
+            cropPreviewContainer.innerHTML = '';
+            tempCroppedImages.forEach((imgData, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'relative group';
+                wrapper.innerHTML = `
+                    <img src="${imgData}" class="h-24 w-auto border rounded-md object-contain bg-white dark:bg-gray-800">
+                    <button data-index="${index}" class="delete-crop-btn absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700">&times;</button>
+                `;
+                cropPreviewContainer.appendChild(wrapper);
+            });
+
+            // Add event listeners to the new delete buttons for each preview
+            cropPreviewContainer.querySelectorAll('.delete-crop-btn').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    const indexToRemove = parseInt(e.currentTarget.dataset.index);
+                    tempCroppedImages.splice(indexToRemove, 1);
+                    renderCropPreviews(); // Re-render the previews
+                    if (tempCroppedImages.length === 0) {
+                        questionSetupForm.classList.add('hidden');
+                    }
+                });
+            });
+        }
+        
+        // NEW: Function to combine multiple images into a single image
+        function combineImages(imagesArray) {
+            return new Promise((resolve) => {
+                const loadedImages = [];
+                let completed = 0;
+                
+                imagesArray.forEach((dataUrl, index) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        loadedImages[index] = img;
+                        completed++;
+                        if (completed === imagesArray.length) {
+                            let totalHeight = 0;
+                            let maxWidth = 0;
+                            const PADDING = 10; // 10px padding between images
+
+                            loadedImages.forEach(loadedImg => {
+                                totalHeight += loadedImg.height;
+                                if (loadedImg.width > maxWidth) {
+                                    maxWidth = loadedImg.width;
+                                }
+                            });
+                            
+                            totalHeight += PADDING * (loadedImages.length - 1);
+
+                            const canvas = document.createElement('canvas');
+                            canvas.width = maxWidth;
+                            canvas.height = totalHeight;
+                            const ctx = canvas.getContext('2d');
+                            ctx.fillStyle = 'white';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            
+                            let currentY = 0;
+                            loadedImages.forEach(loadedImg => {
+                                ctx.drawImage(loadedImg, 0, currentY);
+                                currentY += loadedImg.height + PADDING;
+                            });
+
+                            resolve(canvas.toDataURL('image/jpeg', 0.92));
+                        }
+                    };
+                    img.src = dataUrl;
+                });
+            });
+        }
+
+
+        cancelCropBtn.addEventListener('click', () => {
+             questionSetupForm.classList.add('hidden');
+             tempCroppedImages = []; // Clear array
+             renderCropPreviews(); // Clear UI
+        });
+        
+        // MODIFIED: addQuestionBtn now handles an array of images
+        addQuestionBtn.addEventListener('click', async () => {
+            if (tempCroppedImages.length === 0) {
+                alert('Please crop at least one image first.');
+                return;
+            }
+
+            addQuestionBtn.disabled = true;
+            addQuestionBtn.textContent = 'Creating...';
+
+            const finalImage = await combineImages(tempCroppedImages);
+            
+            const newQuestion = {
+                id: `Q${Date.now()}`,
+                subject: qSubject.value,
+                type: qType.value,
+                image: finalImage,
+                options: (qType.value !== 'Numerical') ? ["A", "B", "C", "D"] : []
+            };
+
+            questions.push(newQuestion);
+            saveQuestionsToLocal();
+            renderQuestionList();
+            
+            questionSetupForm.classList.add('hidden');
+            tempCroppedImages = [];
+            renderCropPreviews();
+            
+            addQuestionBtn.disabled = false;
+            addQuestionBtn.textContent = 'Create Question from Crop(s)';
+        });
+        
+        // --- MANUAL QUESTION ADD ---
+        manualAddBtn.addEventListener('click', () => {
+            manualQText.value = '';
+            manualQPreview.innerHTML = '';
+            manualAddModal.classList.remove('hidden');
+        });
+        
+        manualCancelBtn.addEventListener('click', () => manualAddModal.classList.add('hidden'));
+
+        manualQText.addEventListener('input', () => {
+            manualQPreview.innerHTML = manualQText.value;
+            MathJax.typesetClear([manualQPreview]);
+            MathJax.typesetPromise([manualQPreview]).catch(err => console.log(err));
+        });
+        
+        async function createQuestionImageFromText(text) {
+            const renderContainer = document.createElement('div');
+            renderContainer.innerHTML = text;
+
+            Object.assign(renderContainer.style, {
+                position: 'absolute',
+                left: '-9999px',
+                top: '0',
+                backgroundColor: 'white',
+                color: 'black',
+                padding: '16px',
+                border: '1px solid #e2e8f0',
+                width: '800px',
+                fontFamily: `'Inter', sans-serif`,
+                fontSize: '16px',
+                whiteSpace: 'pre-wrap',
+                wordWrap: 'break-word'
+            });
+
+            document.body.appendChild(renderContainer);
+            
+            await MathJax.typesetPromise([renderContainer]);
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            const canvas = await html2canvas(renderContainer, { 
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+            const imageDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+            document.body.removeChild(renderContainer);
+            return imageDataUrl;
+        }
+
+        manualSaveBtn.addEventListener('click', async () => {
+            const text = manualQText.value;
+            if (!text.trim()) {
+                alert('Please enter question text.');
+                return;
+            }
+            
+            manualSaveBtn.disabled = true;
+            manualSaveBtn.textContent = 'Saving...';
+
+            try {
+                const imageDataUrl = await createQuestionImageFromText(text);
+                const qType = manualQType.value;
+                const newQuestion = {
+                    id: `Q${Date.now()}`,
+                    subject: manualQSubject.value,
+                    type: qType,
+                    image: imageDataUrl,
+                    options: (qType !== 'Numerical') ? ["A", "B", "C", "D"] : []
+                };
+                
+                questions.push(newQuestion);
+                saveQuestionsToLocal();
+                renderQuestionList();
+                
+                manualAddModal.classList.add('hidden');
+            } catch (error) {
+                console.error("Failed to create question image:", error);
+                alert("An error occurred while saving the question. Please try again.");
+            } finally {
+                manualSaveBtn.disabled = false;
+                manualSaveBtn.textContent = 'Save Question';
+            }
+        });
+
+        // --- ANSWER KEY ---
+        setAnswerKeyBtn.addEventListener('click', () => {
+            renderAnswerKeyForm();
+            answerKeyModal.classList.remove('hidden');
+        });
+
+        answerKeyCancelBtn.addEventListener('click', () => answerKeyModal.classList.add('hidden'));
+
+        function renderAnswerKeyForm() {
+            answerKeyList.innerHTML = '';
+            questions.forEach((q, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'p-3 border rounded-md';
+                let optionsHtml = '';
+                const currentAnswer = answerKey[q.id] || [];
+
+                if (q.type === 'SingleCorrect') {
+                    optionsHtml = `<div class="flex items-center space-x-4 mt-2">${q.options.map(opt => `
+                        <label class="flex items-center">
+                            <input type="radio" name="answer-${q.id}" value="${opt}" class="form-radio" ${currentAnswer[0] === opt ? 'checked' : ''}>
+                            <span class="ml-2">${opt}</span>
+                        </label>`).join('')}
+                    </div>`;
+                } else if (q.type === 'MultipleCorrect') {
+                     optionsHtml = `<div class="flex items-center space-x-4 mt-2">${q.options.map(opt => `
+                        <label class="flex items-center">
+                            <input type="checkbox" name="answer-${q.id}" value="${opt}" class="form-checkbox" ${currentAnswer.includes(opt) ? 'checked' : ''}>
+                            <span class="ml-2">${opt}</span>
+                        </label>`).join('')}
+                    </div>`;
+                } else { // Numerical
+                    optionsHtml = `<input type="text" data-id="${q.id}" class="answer-key-input form-input p-2 rounded-md w-full mt-2" placeholder="Enter correct answer" value="${currentAnswer[0] || ''}">`;
+                }
+
+                questionDiv.innerHTML = `
+                    <p class="font-semibold">Q.${index + 1} (${q.subject} - ${q.type})</p>
+                    ${optionsHtml}
+                `;
+                answerKeyList.appendChild(questionDiv);
+            });
+        }
+        
+        answerKeySaveBtn.addEventListener('click', () => {
+            answerKey = {};
+            questions.forEach(q => {
+                if (q.type === 'SingleCorrect') {
+                    const checked = answerKeyList.querySelector(`input[name="answer-${q.id}"]:checked`);
+                    if (checked) answerKey[q.id] = [checked.value];
+                } else if (q.type === 'MultipleCorrect') {
+                    const checked = answerKeyList.querySelectorAll(`input[name="answer-${q.id}"]:checked`);
+                    answerKey[q.id] = Array.from(checked).map(el => el.value);
+                } else {
+                    const input = answerKeyList.querySelector(`input[data-id="${q.id}"]`);
+                    if (input && input.value) answerKey[q.id] = [input.value.trim()];
+                }
+            });
+            saveAnswerKeyToLocal();
+            alert('Answer key saved!');
+            answerKeyModal.classList.add('hidden');
+        });
+
+        // --- GENERAL QUESTION MANAGEMENT ---
+        function renderQuestionList() {
+            questionList.innerHTML = '';
+            questions.forEach((q, index) => {
+                const li = document.createElement('div');
+                li.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800';
+                li.innerHTML = `
+                    <div class="flex items-center space-x-2 overflow-hidden">
+                        <img src="${q.image}" class="w-10 h-10 object-contain border rounded-md flex-shrink-0 dark:border-gray-600">
+                        <div class="flex-grow truncate">
+                            <span class="font-semibold">${q.subject}</span>
+                            <span class="text-xs text-gray-500 block dark:text-gray-400">${q.type}</span>
+                        </div>
+                    </div>
+                    <button data-index="${index}" class="delete-q-btn text-red-500 hover:text-red-700 p-1 rounded-full flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14"x2="14" y1="11" y2="17"/></svg>
+                    </button>`;
+                questionList.appendChild(li);
+            });
+            
+            questionList.querySelectorAll('.delete-q-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = e.currentTarget.dataset.index;
+                    if (confirm('Are you sure you want to delete this question?')) {
+                        questions.splice(index, 1);
+                        saveQuestionsToLocal();
+                        renderQuestionList();
+                    }
+                });
+            });
+
+            questionCountDisp.textContent = questions.length;
+            const hasQuestions = questions.length > 0;
+            startTestBtn.disabled = !hasQuestions;
+            setAnswerKeyBtn.disabled = !hasQuestions;
+        }
+        
+        function saveQuestionsToLocal() { localStorage.setItem('jeeQuestions', JSON.stringify(questions)); }
+        function saveAnswerKeyToLocal() { localStorage.setItem('jeeAnswerKey', JSON.stringify(answerKey)); }
+        function saveSettingsToLocal() { localStorage.setItem('jeeTestSettings', JSON.stringify(testSettings)); }
+
+        function loadDataFromLocal() {
+            const storedQuestions = localStorage.getItem('jeeQuestions');
+            const storedAnswerKey = localStorage.getItem('jeeAnswerKey');
+            const storedSettings = localStorage.getItem('jeeTestSettings');
+            if (storedQuestions) { questions = JSON.parse(storedQuestions); }
+            if (storedAnswerKey) { answerKey = JSON.parse(storedAnswerKey); }
+            if (storedSettings) { testSettings = JSON.parse(storedSettings); }
+            renderQuestionList();
+        }
+        
+        // --- DATA IMPORT/EXPORT/CLEAR ---
+        exportJsonBtn.addEventListener('click', () => {
+            if (questions.length === 0) {
+                alert('No questions to export.');
+                return;
+            }
+            const dataToExport = { questions, answerKey, testSettings };
+            const dataStr = JSON.stringify(dataToExport, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'jee_cbt_data.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+        
+        importJsonInput.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (Array.isArray(importedData.questions) && typeof importedData.answerKey === 'object') {
+                         questions = importedData.questions;
+                         answerKey = importedData.answerKey;
+                         if (importedData.testSettings) testSettings = importedData.testSettings;
+                         saveQuestionsToLocal();
+                         saveAnswerKeyToLocal();
+                         saveSettingsToLocal();
+                         renderQuestionList();
+                         alert('Data imported successfully!');
+                    } else { throw new Error('Invalid JSON format'); }
+                } catch (err) { alert('Error importing file. Please check if it is a valid JSON file.'); }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        });
+
+        clearDataBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear ALL saved questions and settings? This action cannot be undone.')) {
+                localStorage.clear();
+                location.reload();
+            }
+        });
+
+        // NEW: Revamped PDF download function
+        downloadPdfBtn.addEventListener('click', () => {
+            if (questions.length === 0) { alert('No questions to download as PDF.'); return; }
+            const unsetQuestions = questions.filter(q => !answerKey[q.id] || answerKey[q.id].length === 0);
+            if (unsetQuestions.length > 0) {
+                if(!confirm(`Warning: ${unsetQuestions.length} question(s) are missing an answer key. The correct answer will show as 'Not Set'. Continue?`)) return;
+            }
+
+            downloadPdfBtn.disabled = true;
+            downloadPdfBtn.textContent = 'Generating...';
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [800, 600] });
+
+            questions.forEach((q, index) => {
+                if (index > 0) doc.addPage();
+
+                const MARGIN = 40;
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const contentWidth = pageWidth - (MARGIN * 2);
+                const contentHeight = pageHeight - (MARGIN * 2) - 40; // Extra space for answer
+
+                // Add Header
+                const headerText = `Q.${index + 1} | ${q.subject} | ${q.type}`;
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'normal');
+                doc.text(headerText, MARGIN, 30);
+
+                const img = new Image();
+                img.src = q.image;
+                const imgRatio = img.width / img.height;
+                const contentRatio = contentWidth / contentHeight;
+
+                let finalWidth, finalHeight;
+                if (imgRatio > contentRatio) {
+                    finalWidth = contentWidth;
+                    finalHeight = finalWidth / imgRatio;
+                } else {
+                    finalHeight = contentHeight;
+                    finalWidth = finalHeight * imgRatio;
+                }
+
+                const x = (pageWidth - finalWidth) / 2;
+                const y = MARGIN + (contentHeight - finalHeight) / 2;
+
+                doc.addImage(q.image, 'JPEG', x, y, finalWidth, finalHeight);
+
+                // Add correct answer at the bottom
+                const correctAnswer = answerKey[q.id] ? answerKey[q.id].join(', ') : 'Not Set';
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text(`Correct Answer: ${correctAnswer}`, pageWidth / 2, pageHeight - 20, { align: 'center' });
+            });
+
+            doc.save('JEE-CBT-Questions-Slides.pdf');
+            downloadPdfBtn.disabled = false;
+            downloadPdfBtn.textContent = 'Download Qs PDF';
+        });
+
+        // --- SETTINGS LOGIC ---
+        settingsBtn.addEventListener('click', () => {
+            document.getElementById('test-duration').value = testSettings.duration;
+            document.getElementById('scq-correct').value = testSettings.marking.SingleCorrect.correct;
+            document.getElementById('scq-incorrect').value = testSettings.marking.SingleCorrect.incorrect;
+            document.getElementById('mcq-correct').value = testSettings.marking.MultipleCorrect.correct;
+            document.getElementById('mcq-incorrect').value = testSettings.marking.MultipleCorrect.incorrect;
+            document.getElementById('num-correct').value = testSettings.marking.Numerical.correct;
+            document.getElementById('num-incorrect').value = testSettings.marking.Numerical.incorrect;
+            settingsModal.classList.remove('hidden');
+        });
+
+        settingsCancelBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+        settingsSaveBtn.addEventListener('click', () => {
+            testSettings.duration = parseInt(document.getElementById('test-duration').value) || 180;
+            testSettings.marking.SingleCorrect.correct = parseInt(document.getElementById('scq-correct').value);
+            testSettings.marking.SingleCorrect.incorrect = parseInt(document.getElementById('scq-incorrect').value);
+            testSettings.marking.MultipleCorrect.correct = parseInt(document.getElementById('mcq-correct').value);
+            testSettings.marking.MultipleCorrect.incorrect = parseInt(document.getElementById('mcq-incorrect').value);
+            testSettings.marking.Numerical.correct = parseInt(document.getElementById('num-correct').value);
+            testSettings.marking.Numerical.incorrect = parseInt(document.getElementById('num-incorrect').value);
+            saveSettingsToLocal();
+            alert('Settings saved!');
+            settingsModal.classList.add('hidden');
+        });
+
+        // --- TEST LOGIC ---
+        function shuffle(arr) { 
+            let newArr = [...arr];
+            for (let i = newArr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+            }
+            return newArr;
+        }
+
+        function prepareTestQuestions() {
+            const subjects = ['Physics', 'Chemistry', 'Math'];
+            let finalQuestionSet = [];
+            let questionNumber = 1;
+
+            const typeMap = {
+                'SingleCorrect': 'Section A (Single Correct)',
+                'MultipleCorrect': 'Section B (Multiple Correct)',
+                'Numerical': 'Section C (Numerical)'
+            };
+
+            subjects.forEach(subject => {
+                const subjectQuestions = questions.filter(q => q.subject === subject);
+                const typesPresent = [...new Set(subjectQuestions.map(q => q.type))];
+                
+                ['SingleCorrect', 'MultipleCorrect', 'Numerical'].forEach(type => {
+                    if (typesPresent.includes(type)) {
+                        let sectionQuestions = subjectQuestions.filter(q => q.type === type);
+                        sectionQuestions = shuffle(sectionQuestions);
+                        sectionQuestions.forEach(q => {
+                            finalQuestionSet.push({
+                                ...q,
+                                sectionTitle: `${subject} - ${typeMap[type]}`,
+                                questionNumber: questionNumber++
+                            });
+                        });
+                    }
+                });
+            });
+
+            return finalQuestionSet;
+        }
+
+        function populateAndShowInstructions() {
+            const sections = [...new Set(currentTestQuestions.map(q => q.sectionTitle))];
+            let instructionsHTML = `<p><strong>Test Duration:</strong> ${testSettings.duration} minutes</p>`;
+            instructionsHTML += `<h3 class="font-bold mt-4">Sections & Marking Scheme:</h3>`;
+            
+            sections.forEach(section => {
+                const firstQ = currentTestQuestions.find(q => q.sectionTitle === section);
+                const qType = firstQ.type;
+                const marks = testSettings.marking[qType];
+                const count = currentTestQuestions.filter(q => q.sectionTitle === section).length;
+
+                instructionsHTML += `
+                    <div class="p-2 border rounded-md dark:border-gray-600">
+                        <p class="font-semibold">${section} (${count} questions)</p>
+                        <ul class="list-disc list-inside text-sm">
+                            <li>Correct Answer: <span class="font-bold">${marks.correct} marks</span></li>
+                            <li>Incorrect Answer: <span class="font-bold">${marks.incorrect} marks</span></li>
+                        </ul>
+                    </div>`;
+            });
+
+            instructionsContent.innerHTML = instructionsHTML;
+            instructionsModal.classList.remove('hidden');
+        }
+
+        startTestBtn.addEventListener('click', () => {
+            if (questions.length === 0) return;
+            const unsetQuestions = questions.filter(q => !answerKey[q.id] || answerKey[q.id].length === 0);
+            if (unsetQuestions.length > 0) {
+                alert(`Please set the answer for all questions before starting. ${unsetQuestions.length} question(s) are missing answers.`);
+                return;
+            }
+            
+            currentTestQuestions = prepareTestQuestions();
+            populateAndShowInstructions();
+        });
+
+        instructionsCancelBtn.addEventListener('click', () => instructionsModal.classList.add('hidden'));
+        
+        instructionsStartBtn.addEventListener('click', () => {
+            instructionsModal.classList.add('hidden');
+            userResponses = {};
+            questionStatus = {};
+            currentTestQuestions.forEach((q, i) => { questionStatus[i] = 'not-visited'; });
+            currentQuestionIndex = 0;
+            renderQuestionNav();
+            loadQuestion(currentQuestionIndex);
+            startTimer();
+            showPage('test-page');
+        });
+
+        function loadQuestion(index) {
+            if (index < 0 || index >= currentTestQuestions.length) return;
+            currentQuestionIndex = index;
+            const q = currentTestQuestions[index];
+            if (questionStatus[index] === 'not-visited') { questionStatus[index] = 'not-answered'; }
+            qNumberSubject.textContent = `Question ${q.questionNumber} | ${q.sectionTitle}`;
+            qImage.src = q.image;
+            qOptionsArea.innerHTML = '';
+            qNumericalArea.style.display = 'none';
+
+            if (q.type === 'SingleCorrect' || q.type === 'MultipleCorrect') {
+                const inputType = q.type === 'SingleCorrect' ? 'radio' : 'checkbox';
+                q.options.forEach(opt => {
+                     const isChecked = userResponses[index] && userResponses[index].includes(opt);
+                     qOptionsArea.innerHTML += `
+                        <label class="option-label flex items-center p-3 border rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${isChecked ? 'selected' : ''}">
+                            <input type="${inputType}" name="option" value="${opt}" class="hidden" ${isChecked ? 'checked' : ''}>
+                            <span class="font-bold mr-4">${opt}</span>
+                        </label>`;
+                });
+            } else {
+                qNumericalArea.style.display = 'block';
+                const input = qNumericalArea.querySelector('input');
+                input.value = userResponses[index]?.[0] || '';
+            }
+            updateQuestionNav();
+            attachOptionListeners();
+        }
+        
+        function attachOptionListeners() {
+            qOptionsArea.querySelectorAll('input').forEach(input => input.addEventListener('change', handleResponseChange));
+            qNumericalArea.querySelector('input').addEventListener('input', handleResponseChange);
+        }
+        
+        function handleResponseChange() {
+            const q = currentTestQuestions[currentQuestionIndex];
+            if (q.type === 'SingleCorrect') {
+                const selected = qOptionsArea.querySelector('input:checked');
+                userResponses[currentQuestionIndex] = selected ? [selected.value] : [];
+            } else if (q.type === 'MultipleCorrect') {
+                userResponses[currentQuestionIndex] = Array.from(qOptionsArea.querySelectorAll('input:checked')).map(el => el.value);
+            } else {
+                userResponses[currentQuestionIndex] = [qNumericalArea.querySelector('input').value.trim()];
+            }
+            qOptionsArea.querySelectorAll('.option-label').forEach(label => {
+                label.classList.toggle('selected', label.querySelector('input').checked);
+            });
+        }
+        
+        function renderQuestionNav() {
+            qNavPanel.innerHTML = '';
+            let currentSection = '';
+            currentTestQuestions.forEach((q, i) => {
+                if (q.sectionTitle !== currentSection) {
+                    currentSection = q.sectionTitle;
+                    const header = document.createElement('div');
+                    header.className = 'section-header text-sm';
+                    header.textContent = currentSection;
+                    qNavPanel.appendChild(header);
+                }
+                const btn = document.createElement('button');
+                btn.textContent = q.questionNumber;
+                btn.dataset.index = i;
+                btn.className = "w-10 h-10 rounded-md flex items-center justify-center font-bold transition-all";
+                btn.addEventListener('click', () => loadQuestion(i));
+                qNavPanel.appendChild(btn);
+            });
+            updateQuestionNav();
+        }
+        
+        function updateQuestionNav() {
+            qNavPanel.querySelectorAll('button').forEach(btn => {
+                const i = parseInt(btn.dataset.index);
+                btn.className = "w-10 h-10 rounded-md flex items-center justify-center font-bold transition-all";
+                const statusMap = { 'answered': 'question-status-answered', 'not-answered': 'question-status-not-answered', 'review': 'question-status-review', 'not-visited': 'question-status-not-visited' };
+                btn.classList.add(statusMap[questionStatus[i]]);
+                if (i === currentQuestionIndex) btn.classList.add('question-status-current');
+            });
+        }
+        
+        function updateStatusAndGoNext(isReview = false) {
+             const response = userResponses[currentQuestionIndex];
+             if (isReview) { questionStatus[currentQuestionIndex] = 'review'; } 
+             else if (response && response.length > 0 && response.join('') !== '') { questionStatus[currentQuestionIndex] = 'answered'; }
+             
+             if (currentQuestionIndex < currentTestQuestions.length - 1) {
+                loadQuestion(currentQuestionIndex + 1);
+             } else {
+                loadQuestion(0); // Loop back to the first question
+             }
+        }
+        
+        saveNextBtn.addEventListener('click', () => updateStatusAndGoNext(false));
+        markReviewBtn.addEventListener('click', () => updateStatusAndGoNext(true));
+        clearResponseBtn.addEventListener('click', () => { delete userResponses[currentQuestionIndex]; questionStatus[currentQuestionIndex] = 'not-answered'; loadQuestion(currentQuestionIndex); });
+        submitTestBtn.addEventListener('click', () => { if (confirm('Are you sure you want to submit the test?')) submitTest(); });
+
+        function submitTest() {
+            clearInterval(timerInterval);
+            evaluateResults();
+            showPage('result-page');
+        }
+
+        // --- TIMER ---
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+        
+        function startTimer() {
+            timeLeft = testSettings.duration * 60;
+            testTimerDisplay.textContent = formatTime(timeLeft);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                testTimerDisplay.textContent = formatTime(timeLeft);
+                if (timeLeft <= 0) { alert('Time is up! The test will be submitted automatically.'); submitTest(); }
+            }, 1000);
+        }
+
+        // --- RESULT & REVIEW ---
+        let finalResults = {};
+        
+        function evaluateResults() {
+             let totalScore = 0, correctCount = 0, incorrectCount = 0, unattemptedCount = 0, totalMaxMarks = 0;
+             let subjectStats = { Physics: { score: 0, correct: 0, incorrect: 0, unattempted: 0 }, Chemistry: { score: 0, correct: 0, incorrect: 0, unattempted: 0 }, Math: { score: 0, correct: 0, incorrect: 0, unattempted: 0 } };
+
+            currentTestQuestions.forEach((q, i) => {
+                const marks = testSettings.marking[q.type];
+                totalMaxMarks += marks.correct;
+                const status = getQuestionResultStatus(q, userResponses[i], answerKey[q.id]);
+                const subject = q.subject;
+
+                switch(status) {
+                    case 'correct':
+                        totalScore += marks.correct;
+                        correctCount++;
+                        subjectStats[subject].score += marks.correct;
+                        subjectStats[subject].correct++;
+                        break;
+                    case 'incorrect':
+                        totalScore += marks.incorrect;
+                        incorrectCount++;
+                        subjectStats[subject].score += marks.incorrect;
+                        subjectStats[subject].incorrect++;
+                        break;
+                    case 'unattempted':
+                        unattemptedCount++;
+                        subjectStats[subject].unattempted++;
+                        break;
+                }
+            });
+            finalResults = { totalScore, correctCount, incorrectCount, unattemptedCount, subjectStats, questions: currentTestQuestions, responses: userResponses, answerKey, totalMaxMarks };
+            displayResults(finalResults);
+        }
+        
+        function displayResults(results) {
+            document.getElementById('total-score').textContent = `${results.totalScore} / ${results.totalMaxMarks}`;
+            document.getElementById('correct-count').textContent = results.correctCount;
+            document.getElementById('incorrect-count').textContent = results.incorrectCount;
+            document.getElementById('unattempted-count').textContent = results.unattemptedCount;
+            Object.keys(results.subjectStats).forEach(subject => {
+                const stats = results.subjectStats[subject];
+                const container = document.getElementById(`${subject.toLowerCase()}-results`);
+                container.innerHTML = `<h4 class="font-bold text-lg mb-2">${subject}</h4><p>Score: <span class="font-bold">${stats.score}</span></p><p class="subject-correct">Correct: ${stats.correct}</p><p class="subject-incorrect">Incorrect: ${stats.incorrect}</p><p>Unattempted: ${stats.unattempted}</p>`;
+            });
+        }
+        
+        function getQuestionResultStatus(question, userAns, correctAns) {
+            if (!userAns || userAns.length === 0 || (question.type === 'Numerical' && userAns[0] === '')) {
+                return 'unattempted';
+            }
+            let isCorrect = false;
+            if (question.type === 'Numerical') {
+                isCorrect = parseFloat(userAns[0]) === parseFloat(correctAns[0]);
+            } else {
+                const sortedUserAns = [...userAns].sort();
+                const sortedCorrectAns = [...(correctAns || [])].sort();
+                isCorrect = JSON.stringify(sortedUserAns) === JSON.stringify(sortedCorrectAns);
+            }
+            return isCorrect ? 'correct' : 'incorrect';
+        }
+        
+        function renderReviewSection(filter = 'all') {
+            const reviewSection = document.getElementById('review-section');
+            reviewSection.innerHTML = '';
+            let questionsShown = 0;
+
+            finalResults.questions.forEach((q, i) => {
+                const userAns = finalResults.responses[i] || [];
+                const correctAns = finalResults.answerKey[q.id] || [];
+                const status = getQuestionResultStatus(q, userAns, correctAns);
+
+                if (filter !== 'all' && filter !== status) {
+                    return;
+                }
+                questionsShown++;
+                
+                let userAnsStr = (userAns.length > 0 && userAns[0] !== '') ? userAns.join(', ') : 'Not Attempted';
+                let correctAnsStr = correctAns.join(', ');
+                
+                let resultClass = '';
+                if(status === 'correct') resultClass = 'status-correct-bg';
+                else if (status === 'incorrect') resultClass = 'status-incorrect-bg';
+                else resultClass = 'status-unattempted-bg';
+
+                const reviewCard = document.createElement('div');
+                reviewCard.className = `card rounded-lg p-4 mb-4 ${resultClass}`;
+                reviewCard.innerHTML = `<p class="font-bold mb-2">Question ${q.questionNumber} (${q.subject})</p><img src="${q.image}" class="border rounded-md mb-4 max-w-full h-auto"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><p class="font-semibold">Your Answer:</p><p class="text-lg font-mono p-2 rounded-md bg-white/50 dark:bg-black/20">${userAnsStr}</p></div><div><p class="font-semibold">Correct Answer:</p><p class="text-lg font-mono p-2 rounded-md bg-white/50 dark:bg-black/20">${correctAnsStr}</p></div></div>`;
+                reviewSection.appendChild(reviewCard);
+            });
+            if(questionsShown === 0) {
+                reviewSection.innerHTML = `<p class="text-center text-gray-500 dark:text-gray-400 py-8">No questions to display for this filter.</p>`;
+            }
+        }
+
+        document.getElementById('review-answers-btn').addEventListener('click', () => {
+            const controls = document.getElementById('review-controls');
+            controls.classList.remove('hidden');
+            renderReviewSection('all');
+            controls.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        document.querySelectorAll('.review-filter-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                const filter = e.currentTarget.dataset.filter;
+                renderReviewSection(filter);
+                document.querySelectorAll('.review-filter-btn').forEach(b => {
+                    b.classList.remove('btn-primary');
+                    b.classList.add('btn-secondary');
+                });
+                e.currentTarget.classList.add('btn-primary');
+                e.currentTarget.classList.remove('btn-secondary');
+            });
+        });
+        
+        document.getElementById('back-to-home-btn').addEventListener('click', () => {
+            document.getElementById('review-controls').classList.add('hidden');
+            document.getElementById('review-section').innerHTML = '';
+            showPage('setup-page');
+        });
+
+        async function downloadResultPDF() {
+            const btn = document.getElementById('download-result-btn');
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'pt', 'a4');
+                const MARGIN = 40;
+                const PAGE_WIDTH = doc.internal.pageSize.getWidth();
+                let yPos = MARGIN;
+
+                doc.setFontSize(24);
+                doc.setFont(undefined, 'bold');
+                doc.text('Test Performance Report', PAGE_WIDTH / 2, yPos, { align: 'center' });
+                yPos += 40;
+
+                doc.setFontSize(18);
+                doc.text('Overall Summary', MARGIN, yPos);
+                yPos += 25;
+                
+                const summaryData = [
+                    ['Total Score', `${finalResults.totalScore} / ${finalResults.totalMaxMarks}`],
+                    ['Correct Answers', finalResults.correctCount.toString()],
+                    ['Incorrect Answers', finalResults.incorrectCount.toString()],
+                    ['Unattempted', finalResults.unattemptedCount.toString()],
+                ];
+                doc.autoTable({ startY: yPos, head: [['Metric', 'Value']], body: summaryData, theme: 'striped', headStyles: { fillColor: [41, 128, 185] } });
+                yPos = doc.autoTable.previous.finalY + 30;
+
+                doc.setFontSize(18);
+                doc.text('Subject-wise Performance', MARGIN, yPos);
+                yPos += 25;
+
+                const subjectData = Object.keys(finalResults.subjectStats).map(subject => {
+                    const stats = finalResults.subjectStats[subject];
+                    return [subject, stats.score.toString(), stats.correct.toString(), stats.incorrect.toString(), stats.unattempted.toString()];
+                });
+                doc.autoTable({ startY: yPos, head: [['Subject', 'Score', 'Correct', 'Incorrect', 'Unattempted']], body: subjectData, theme: 'grid', headStyles: { fillColor: [41, 128, 185] } });
+                
+                doc.addPage();
+                yPos = MARGIN;
+                doc.setFontSize(18);
+                doc.text('Detailed Question Analysis', MARGIN, yPos);
+                yPos += 30;
+
+                for (let i = 0; i < finalResults.questions.length; i++) {
+                    const q = finalResults.questions[i];
+                    const userAns = finalResults.responses[i] || [];
+                    const correctAns = finalResults.answerKey[q.id] || [];
+                    const status = getQuestionResultStatus(q, userAns, correctAns);
+                    const marks = testSettings.marking[q.type];
+                    let marksAwarded = 0;
+                    if (status === 'correct') marksAwarded = marks.correct;
+                    if (status === 'incorrect') marksAwarded = marks.incorrect;
+                    
+                    const statusColors = { correct: [0, 128, 0], incorrect: [255, 0, 0], unattempted: [0, 0, 255] };
+
+                    const img = new Image();
+                    img.src = q.image;
+                    const imgRatio = img.width / img.height;
+                    const contentWidth = PAGE_WIDTH - MARGIN * 2;
+                    let imgHeight = contentWidth / imgRatio;
+                    if (imgHeight > 250) imgHeight = 250;
+                    const imgWidth = imgHeight * imgRatio;
+
+                    if (yPos + imgHeight + 80 > doc.internal.pageSize.getHeight() - MARGIN) {
+                        doc.addPage();
+                        yPos = MARGIN;
+                    }
+                    
+                    doc.setFontSize(12);
+                    doc.setFont(undefined, 'bold');
+                    doc.setTextColor.apply(this, statusColors[status]);
+                    doc.text(`Q.${q.questionNumber} (${q.subject}) - Status: ${status.toUpperCase()}`, MARGIN, yPos);
+                    doc.setTextColor(0, 0, 0); // Reset color
+                    yPos += 20;
+
+                    try {
+                        doc.addImage(q.image, 'JPEG', MARGIN, yPos, imgWidth, imgHeight);
+                        yPos += imgHeight + 15;
+                    } catch (e) { console.error("Error adding image to PDF:", e); yPos += 15; }
+                    
+                    const userAnsStr = (userAns.length > 0 && userAns[0] !== '') ? userAns.join(', ') : 'Not Attempted';
+                    const correctAnsStr = correctAns.join(', ');
+
+                    doc.autoTable({
+                        startY: yPos,
+                        head: [['Your Answer', 'Correct Answer', 'Marks Awarded']],
+                        body: [[userAnsStr, correctAnsStr, marksAwarded.toString()]],
+                        theme: 'grid'
+                    });
+                    yPos = doc.autoTable.previous.finalY + 25;
+                }
+
+                doc.save('JEE_CBT_Result_Analysis.pdf');
+            } catch (error) {
+                console.error("Failed to generate PDF:", error);
+                alert("An error occurred while generating the PDF. Please try again.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Download Result (PDF)';
+            }
+        }
+        
+        document.getElementById('download-result-btn').addEventListener('click', downloadResultPDF);
+
+        // --- INITIALIZATION ---
+        function init() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            applyTheme(savedTheme);
+            updateZoomDisplay();
+            loadDataFromLocal();
+            showPage('setup-page');
+        }
+        
+        init();
+    </script>
+</body>
+</html>
