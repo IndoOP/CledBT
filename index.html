@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CledBT | Modern CBT</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons (Vanilla JS) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- MathJax (Updated Config for Display Math) -->
+    <script>
+      MathJax = {
+        tex: { 
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']] 
+        },
+        svg: { fontCache: 'none' }
+      };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        slate: { 850: '#151f2e', 950: '#020617' },
+                        primary: { 500: '#6366f1', 600: '#4f46e5' } // Indigo
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(-10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Styles */
+        body {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* PDF & Canvas Layers */
+        #pdf-canvas-container {
+            position: relative;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            margin: 0 auto;
+        }
+        #text-layer {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            overflow: hidden; opacity: 0.2; line-height: 1.0;
+            pointer-events: none;
+        }
+        #text-layer > span {
+            color: transparent; position: absolute; white-space: pre; cursor: text;
+            transform-origin: 0% 0%;
+        }
+        #crop-box {
+            position: absolute;
+            border: 2px solid #6366f1;
+            background-color: rgba(99, 102, 241, 0.1);
+            box-sizing: border-box;
+            pointer-events: none;
+            display: none;
+            z-index: 10;
+        }
+
+        /* Utilities */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .dark .glass-panel {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .btn-icon {
+            padding: 0.5rem; border-radius: 0.5rem; transition: background-color 0.2s;
+        }
+        .btn-icon:hover { background-color: #f1f5f9; }
+        .dark .btn-icon:hover { background-color: #334155; }
+        
+        /* --- QUESTION GRID STATUS (Standard CSS Colors) --- */
+        .q-status-answered {
+            background-color: #22c55e !important;
+            border-color: #22c55e !important;
+            color: #ffffff !important;
+        }
+        .q-status-not-answered {
+            background-color: #ef4444 !important;
+            border-color: #ef4444 !important;
+            color: #ffffff !important;
+        }
+        .q-status-review {
+            background-color: #a855f7 !important;
+            border-color: #a855f7 !important;
+            color: #ffffff !important;
+        }
+        .q-status-not-visited {
+            background-color: #f1f5f9;
+            border-color: transparent;
+            color: #475569;
+        }
+        .dark .q-status-not-visited {
+            background-color: #334155;
+            color: #cbd5e1;
+        }
+        .q-status-current {
+            box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #6366f1 !important;
+            z-index: 10;
+        }
+        .dark .q-status-current {
+            box-shadow: 0 0 0 2px #0f172a, 0 0 0 4px #6366f1 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-40 glass-panel border-b border-slate-200 dark:border-slate-800 px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 text-white p-1.5 rounded-lg">
+                <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+            </div>
+            <h1 class="text-lg font-bold tracking-tight">CledBT</h1>
+        </div>
+
+        <div class="flex items-center gap-2 md:gap-4">
+             <span id="test-timer" class="hidden font-mono text-xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">00:00:00</span>
+             
+             <!-- Pause Button -->
+             <button id="pause-test-btn" class="hidden px-3 py-1.5 text-xs font-bold uppercase tracking-wider border-2 border-amber-500 text-amber-600 dark:text-amber-400 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
+                 Pause
+             </button>
+
+             <button id="theme-toggle" class="btn-icon" aria-label="Toggle Theme">
+                <i data-lucide="sun" id="theme-icon-light" class="w-5 h-5"></i>
+                <i data-lucide="moon" id="theme-icon-dark" class="w-5 h-5 hidden"></i>
+             </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow relative">
+        
+        <!-- VIEW 1: Setup & Crop -->
+        <div id="setup-page" class="p-4 md:p-6 max-w-[1600px] mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-100px)]">
+                
+                <!-- LEFT: PDF Viewer -->
+                <div class="lg:col-span-8 xl:col-span-9 flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden relative">
+                    
+                    <!-- Toolbar -->
+                    <div class="h-14 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-slate-500 dark:text-slate-400">PDF Viewer</span>
+                            <input type="file" id="pdf-upload" accept=".pdf" class="hidden">
+                            <label for="pdf-upload" class="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-md font-medium cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
+                                Upload PDF
+                            </label>
+                        </div>
+
+                        <!-- Pagination & Zoom -->
+                        <div id="pdf-controls" class="flex items-center gap-1 md:gap-2 hidden">
+                            <button id="prev-page" class="btn-icon"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                            <span class="text-xs font-mono text-slate-500 w-16 text-center">
+                                <span id="page-num">0</span> / <span id="page-count">0</span>
+                            </span>
+                            <button id="next-page" class="btn-icon"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                            <div class="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-2"></div>
+                            <button id="zoom-out-btn" class="btn-icon"><i data-lucide="minus" class="w-4 h-4"></i></button>
+                            <span id="zoom-level" class="text-xs font-mono w-12 text-center">100%</span>
+                            <button id="zoom-in-btn" class="btn-icon"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Viewer Area -->
+                    <div class="flex-grow overflow-auto relative bg-slate-100 dark:bg-slate-950 p-4 text-center" id="pdf-scroll-container">
+                        <div id="empty-state" class="flex flex-col items-center justify-center h-full text-slate-400">
+                            <i data-lucide="file-up" class="w-16 h-16 mb-4 opacity-50"></i>
+                            <p class="text-sm">Upload a PDF to start cropping questions</p>
+                        </div>
+                        
+                        <div id="pdf-viewer" class="hidden shadow-xl relative inline-block text-left">
+                            <div id="pdf-canvas-container">
+                                <canvas id="pdf-canvas" class="block"></canvas>
+                                <div id="text-layer"></div>
+                                <div id="crop-box"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="crop-hint" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/80 text-white text-xs px-4 py-2 rounded-full backdrop-blur hidden pointer-events-none">
+                        Drag to crop a question
+                    </div>
+                </div>
+
+                <!-- RIGHT: Tools & Question List -->
+                <div class="lg:col-span-4 xl:col-span-3 flex flex-col gap-4 h-full overflow-hidden">
+                    
+                    <!-- Action Card -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 flex-shrink-0">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="font-semibold text-slate-800 dark:text-slate-200">Add Questions</h2>
+                            <button id="manual-add-btn" class="text-xs text-indigo-600 hover:underline">Manual Entry</button>
+                        </div>
+
+                        <!-- Active Crop Area -->
+                        <div id="question-setup-form" class="hidden animate-fade-in">
+                            <div class="mb-3">
+                                <p class="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wider">Selected Area</p>
+                                <div id="crop-preview-container" class="flex gap-2 overflow-x-auto pb-2 min-h-[60px] border border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-2 bg-slate-50 dark:bg-slate-950/50">
+                                    <!-- Crop thumbs go here -->
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div class="space-y-1">
+                                    <label class="text-xs font-medium text-slate-500">Subject</label>
+                                    <select id="q-subject" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        <option>Physics</option>
+                                        <option>Chemistry</option>
+                                        <option>Math</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-xs font-medium text-slate-500">Type</label>
+                                    <select id="q-type" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        <option value="SingleCorrect">Single Correct</option>
+                                        <option value="MultipleCorrect">Multi Correct</option>
+                                        <option value="Numerical">Numerical</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button id="add-question-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 rounded-lg transition-colors">
+                                    Add Question
+                                </button>
+                                <button id="cancel-crop-btn" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Placeholder when no crop -->
+                        <div id="setup-placeholder" class="text-center py-6 text-slate-400 text-sm border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                            Select an area on the PDF
+                        </div>
+                    </div>
+
+                    <!-- Question Bank List -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col flex-grow overflow-hidden">
+                        <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                            <h3 class="font-semibold text-sm">Question Bank</h3>
+                            <span id="question-count-display" class="bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                        </div>
+                        
+                        <div id="question-list" class="flex-grow overflow-y-auto p-2 space-y-2">
+                            <!-- Questions injected here -->
+                        </div>
+                        
+                        <!-- Bottom Actions -->
+                        <div class="p-4 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                            <button id="start-test-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg shadow-sm transition-all">
+                                Start Test
+                            </button>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button id="settings-btn" class="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Settings</button>
+                                <button id="set-answer-key-btn" class="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Answer Key</button>
+                            </div>
+                            <div class="flex justify-between pt-2">
+                                <button id="download-pdf-btn" class="text-xs text-slate-500 hover:text-indigo-600 flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> PDF</button>
+                                <button id="export-json-btn" class="text-xs text-slate-500 hover:text-indigo-600 flex items-center gap-1"><i data-lucide="save" class="w-3 h-3"></i> Save</button>
+                                <label for="import-json-input" class="text-xs text-slate-500 hover:text-indigo-600 flex items-center gap-1 cursor-pointer"><i data-lucide="upload" class="w-3 h-3"></i> Load</label>
+                                <input type="file" id="import-json-input" class="hidden" accept=".json">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: Test Interface -->
+        <!-- Responsive adjustment: h-auto on mobile with padding-bottom for sticky footer, h-calc on desktop -->
+        <div id="test-page" class="hidden p-4 md:p-6 max-w-7xl mx-auto lg:h-[calc(100vh-80px)] h-auto min-h-screen relative pb-28 lg:pb-6">
+            
+            <!-- Pause Overlay -->
+            <div id="pause-overlay" class="hidden absolute inset-0 z-[60] bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl">
+                <div class="p-8 text-center max-w-md">
+                    <div class="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="pause" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">Test Paused</h2>
+                    <p class="text-slate-500 dark:text-slate-400 mb-8">The timer is stopped. Click resume when you are ready to continue.</p>
+                    <button onclick="togglePause()" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all">
+                        Resume Test
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+                
+                <!-- Question Area -->
+                <div class="lg:col-span-8 xl:col-span-9 flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden lg:h-full h-auto">
+                    <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                        <span id="q-number-subject" class="font-semibold text-slate-700 dark:text-slate-200">Question 1</span>
+                        <span id="q-type-badge" class="text-xs font-mono bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded text-slate-600 dark:text-slate-400">SCQ</span>
+                    </div>
+                    
+                    <div class="flex-grow overflow-y-auto p-6 flex flex-col items-center min-h-[300px]">
+                        <img id="q-image" src="" alt="Question" class="max-w-full h-auto rounded-lg shadow-sm border border-slate-100 dark:border-slate-800 mb-8">
+                        
+                        <!-- Options -->
+                        <div class="w-full max-w-2xl">
+                            <div id="q-options-area" class="space-y-3"></div>
+                            <div id="q-numerical-area" class="hidden">
+                                <label class="block text-sm font-medium mb-2">Your Answer</label>
+                                <input type="number" step="any" id="q-numerical-input" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Enter numerical value...">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sticky Footer on Mobile, Static on Desktop -->
+                    <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 lg:bg-slate-50 dark:lg:bg-slate-950 flex justify-between lg:static fixed bottom-0 left-0 right-0 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] lg:shadow-none">
+                        <button id="clear-response-btn" class="px-4 py-2 text-sm text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">Clear</button>
+                        <div class="flex gap-3">
+                            <button id="mark-review-btn" class="px-4 py-2 text-sm border border-purple-200 dark:border-purple-900 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors whitespace-nowrap">Review</button>
+                            <button id="save-next-btn" class="px-6 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap">Save & Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar: Navigator -->
+                <div class="lg:col-span-4 xl:col-span-3 flex flex-col gap-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden lg:h-full h-auto">
+                    <div class="p-4 border-b border-slate-200 dark:border-slate-800">
+                        <h3 class="font-semibold text-sm">Question Palette</h3>
+                    </div>
+                    
+                    <div class="p-4 flex-grow lg:overflow-y-auto">
+                        <!-- Mobile: 7 cols, Desktop: 5 cols -->
+                        <div id="q-nav-panel" class="grid grid-cols-7 lg:grid-cols-5 gap-2 content-start">
+                            <!-- Navigation Buttons -->
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
+                         <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-500 mb-4">
+                            <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span> Answered</div>
+                            <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Skipped</div>
+                            <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-500"></span> Review</div>
+                            <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600"></span> Unseen</div>
+                         </div>
+                         <button id="submit-test-btn" class="w-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 py-2.5 rounded-lg font-medium text-sm transition-colors">
+                            Submit Test
+                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: Results -->
+        <div id="result-page" class="hidden p-4 md:p-8 max-w-5xl mx-auto">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                <div class="bg-indigo-600 p-8 text-center text-white relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+                    <h2 class="text-2xl font-bold relative z-10 mb-2">Test Summary</h2>
+                    <div class="text-6xl font-bold relative z-10 tracking-tighter" id="total-score">0</div>
+                    <p class="text-indigo-200 relative z-10">Total Score</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-800 border-b border-slate-200 dark:border-slate-800">
+                    <div class="p-6 text-center">
+                        <div class="text-3xl font-bold text-green-500 mb-1" id="correct-count">0</div>
+                        <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">Correct</div>
+                    </div>
+                    <div class="p-6 text-center">
+                        <div class="text-3xl font-bold text-red-500 mb-1" id="incorrect-count">0</div>
+                        <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">Incorrect</div>
+                    </div>
+                    <div class="p-6 text-center">
+                        <div class="text-3xl font-bold text-slate-400 mb-1" id="unattempted-count">0</div>
+                        <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">Unattempted</div>
+                    </div>
+                </div>
+
+                <div class="p-8">
+                    <!-- Time Analysis -->
+                    <div class="mb-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <h4 class="text-sm font-bold uppercase text-slate-500 mb-3 tracking-wide">Time Analysis (Avg / Question)</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div><div class="text-xl font-bold text-slate-700 dark:text-slate-200" id="avg-time-overall">0s</div><div class="text-xs text-slate-400">Overall</div></div>
+                            <div><div class="text-xl font-bold text-slate-700 dark:text-slate-200" id="avg-time-phy">0s</div><div class="text-xs text-slate-400">Physics</div></div>
+                            <div><div class="text-xl font-bold text-slate-700 dark:text-slate-200" id="avg-time-chem">0s</div><div class="text-xs text-slate-400">Chemistry</div></div>
+                            <div><div class="text-xl font-bold text-slate-700 dark:text-slate-200" id="avg-time-math">0s</div><div class="text-xs text-slate-400">Math</div></div>
+                        </div>
+                    </div>
+
+                    <h3 class="text-lg font-semibold mb-4">Subject Analysis</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                         <div id="physics-results" class="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700"></div>
+                         <div id="chemistry-results" class="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700"></div>
+                         <div id="math-results" class="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700"></div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div id="analytics-charts" class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <h4 class="text-xs font-bold uppercase text-slate-500 mb-4 text-center">Performance Distribution</h4>
+                            <div class="h-64"><canvas id="chart-distribution"></canvas></div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <h4 class="text-xs font-bold uppercase text-slate-500 mb-4 text-center">Subject-wise Accuracy</h4>
+                            <div class="h-64"><canvas id="chart-subjects"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap justify-center gap-3">
+                        <button id="review-answers-btn" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow-sm transition-colors">Detailed Review</button>
+                        <button id="download-result-btn" class="px-6 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Download Detailed Report</button>
+                        <button id="back-to-home-btn" class="px-6 py-2.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium">Exit to Home</button>
+                    </div>
+                    
+                    <!-- Review Filters -->
+                    <div id="review-controls" class="hidden mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
+                        <div class="flex justify-center gap-2 mb-6">
+                            <button data-filter="all" class="review-filter-btn px-4 py-1.5 rounded-full text-sm font-medium bg-indigo-600 text-white shadow-sm">All</button>
+                            <button data-filter="correct" class="review-filter-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Correct</button>
+                            <button data-filter="incorrect" class="review-filter-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Incorrect</button>
+                        </div>
+                        <div id="review-section" class="space-y-6"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <!-- Manual Add Modal -->
+    <div id="manual-add-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <h3 class="font-bold text-lg">Manual Question Entry</h3>
+                <button id="manual-cancel-btn" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-grow space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Question Text (LaTeX supported)</label>
+                    <textarea id="manual-q-text" rows="4" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm" placeholder="e.g., Find $x$ if $$\int_0^1 x^2 dx = ?$$"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Preview</label>
+                    <div id="manual-q-preview" class="p-4 border border-slate-200 dark:border-slate-700 rounded-xl min-h-[4rem] bg-white dark:bg-slate-950"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Subject</label>
+                        <select id="manual-q-subject" class="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"><option>Physics</option><option>Chemistry</option><option>Math</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Type</label>
+                        <select id="manual-q-type" class="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"><option value="SingleCorrect">Single Correct</option><option value="MultipleCorrect">Multiple Correct</option><option value="Numerical">Numerical</option></select>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                <button id="manual-save-btn" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">Save Question</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Answer Key Modal -->
+    <div id="answer-key-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <h3 class="font-bold text-lg">Answer Key</h3>
+                <button id="answer-key-cancel-btn" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="answer-key-list" class="p-4 overflow-y-auto flex-grow space-y-3 bg-slate-50 dark:bg-slate-950/50">
+                <!-- Key items -->
+            </div>
+            <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                <button id="answer-key-save-btn" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">Save Keys</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
+             <div class="p-4 border-b border-slate-200 dark:border-slate-800">
+                <h3 class="font-bold text-lg">Test Settings</h3>
+            </div>
+            <div class="p-6 space-y-4 flex-grow overflow-y-auto">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Duration (mins)</label>
+                    <input type="number" id="test-duration" class="w-full p-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent">
+                </div>
+                <div class="space-y-3">
+                    <h4 class="text-xs font-bold uppercase text-slate-500 tracking-wider">Marking Scheme (+/-)</h4>
+                    <div class="grid grid-cols-3 gap-2 text-center text-sm">
+                        <span>Type</span><span>Correct</span><span>Incorrect</span>
+                        <span class="text-left">SCQ</span><input id="scq-correct" class="w-full p-1 border rounded bg-transparent text-center"><input id="scq-incorrect" class="w-full p-1 border rounded bg-transparent text-center">
+                        <span class="text-left">MCQ</span><input id="mcq-correct" class="w-full p-1 border rounded bg-transparent text-center"><input id="mcq-incorrect" class="w-full p-1 border rounded bg-transparent text-center">
+                        <span class="text-left">Num</span><input id="num-correct" class="w-full p-1 border rounded bg-transparent text-center"><input id="num-incorrect" class="w-full p-1 border rounded bg-transparent text-center">
+                    </div>
+                </div>
+                
+                <div class="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
+                    <h4 class="text-xs font-bold uppercase text-red-500 tracking-wider mb-2">Danger Zone</h4>
+                    <button id="clear-data-btn" class="w-full px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg text-sm font-medium transition-colors">
+                        Clear All Saved Data
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
+                <button id="settings-cancel-btn" class="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">Cancel</button>
+                <button id="settings-save-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div id="instructions-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col border border-slate-200 dark:border-slate-800">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-800">
+                <h2 class="text-xl font-bold text-slate-800 dark:text-white">Ready to begin?</h2>
+            </div>
+            <div id="instructions-content" class="p-6 space-y-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
+                <!-- content -->
+            </div>
+            <div class="p-6 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+                <button id="instructions-cancel-btn" class="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">Cancel</button>
+                <button id="instructions-start-btn" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-105">Start Test</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // --- CONFIGURATION ---
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
+
+        // --- DOM HELPER ---
+        const el = id => document.getElementById(id);
+        
+        // --- GLOBAL STATE ---
+        const STATE = {
+            questions: [],
+            answerKey: {},
+            testSettings: {
+                duration: 180,
+                marking: {
+                    SingleCorrect: {correct: 4, incorrect: -1},
+                    MultipleCorrect: {correct: 4, incorrect: -1},
+                    Numerical: {correct: 4, incorrect: 0}
+                }
+            },
+            currentTestQs: [],
+            userResponses: {},
+            qStatus: [],
+            timerInterval: null,
+            timeLeft: 0,
+            currentQuestionIndex: 0,
+            tempCroppedImages: [],
+            timePerQuestion: {},
+            lastQuestionChangeTimestamp: null,
+            isPaused: false
+        };
+        
+        // --- THEME LOGIC ---
+        const themeToggle = el('theme-toggle');
+        const applyTheme = (theme) => {
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+            el('theme-icon-light').classList.toggle('hidden', theme === 'dark');
+            el('theme-icon-dark').classList.toggle('hidden', theme !== 'dark');
+            localStorage.setItem('theme', theme);
+        };
+        themeToggle.addEventListener('click', () => applyTheme(localStorage.getItem('theme') === 'dark' ? 'light' : 'dark'));
+
+        // --- NAVIGATION LOGIC ---
+        const pages = {
+            setup: el('setup-page'),
+            test: el('test-page'),
+            result: el('result-page')
+        };
+
+        function showPage(pageName) {
+            Object.values(pages).forEach(p => p.classList.add('hidden'));
+            pages[pageName].classList.remove('hidden');
+            
+            // Navbar updates
+            if(pageName === 'test') {
+                el('test-timer').classList.remove('hidden');
+                el('pause-test-btn').classList.remove('hidden');
+            } else {
+                el('test-timer').classList.add('hidden');
+                el('pause-test-btn').classList.add('hidden');
+            }
+            window.scrollTo(0,0);
+        }
+
+        // --- LOCAL STORAGE & DATA MANAGEMENT ---
+        function saveData() {
+            try {
+                localStorage.setItem('cbt_qs', JSON.stringify(STATE.questions));
+                localStorage.setItem('cbt_key', JSON.stringify(STATE.answerKey));
+                localStorage.setItem('cbt_sets', JSON.stringify(STATE.testSettings));
+            } catch (e) {
+                console.error("Storage Error:", e);
+                alert("Warning: Failed to save data. Local storage might be full.");
+            }
+        }
+
+        function loadData() {
+            try {
+                if(localStorage.getItem('jeeQuestions') && !localStorage.getItem('cbt_qs')) {
+                    STATE.questions = JSON.parse(localStorage.getItem('jeeQuestions') || '[]');
+                    STATE.answerKey = JSON.parse(localStorage.getItem('jeeAnswerKey') || '{}');
+                    const oldSettings = JSON.parse(localStorage.getItem('jeeTestSettings'));
+                    if (oldSettings) STATE.testSettings = oldSettings;
+                    saveData(); 
+                } else {
+                    STATE.questions = JSON.parse(localStorage.getItem('cbt_qs') || '[]');
+                    STATE.answerKey = JSON.parse(localStorage.getItem('cbt_key') || '{}');
+                    const savedSettings = JSON.parse(localStorage.getItem('cbt_sets'));
+                    if (savedSettings) STATE.testSettings = savedSettings;
+                }
+            } catch(e) {
+                console.error("Load Error:", e);
+                STATE.questions = [];
+                STATE.answerKey = {};
+            }
+            renderQuestionsList();
+        }
+
+        // --- PDF RENDERING LOGIC ---
+        let pdfDoc = null, pageNum = 1, scale = 1.2, canvasCtx = el('pdf-canvas').getContext('2d');
+        let cropping = false, cropStart = {}, cropEnd = {};
+
+        el('pdf-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(file && file.type === 'application/pdf') {
+                const fr = new FileReader();
+                fr.onload = function() {
+                    const ta = new Uint8Array(this.result);
+                    pdfjsLib.getDocument(ta).promise.then(pdf => {
+                        pdfDoc = pdf;
+                        el('page-count').textContent = pdf.numPages;
+                        el('pdf-controls').classList.remove('hidden');
+                        el('empty-state').classList.add('hidden');
+                        el('pdf-viewer').classList.remove('hidden');
+                        el('crop-hint').classList.remove('hidden');
+                        setTimeout(() => el('crop-hint').classList.add('hidden'), 5000);
+                        renderPage(1);
+                    });
+                };
+                fr.readAsArrayBuffer(file);
+            }
+        });
+
+        function renderPage(num) {
+            if(!pdfDoc) return;
+            pdfDoc.getPage(num).then(page => {
+                const containerWidth = el('pdf-scroll-container').clientWidth - 40;
+                const unscaledViewport = page.getViewport({scale: 1});
+                const fitScale = containerWidth / unscaledViewport.width;
+                const finalScale = scale * (fitScale > 1 ? fitScale : 1.5); 
+                
+                const viewport = page.getViewport({ scale: finalScale });
+                el('pdf-canvas').height = viewport.height;
+                el('pdf-canvas').width = viewport.width;
+                el('text-layer').style.width = viewport.width + 'px';
+                el('text-layer').style.height = viewport.height + 'px';
+                el('zoom-level').textContent = Math.round(finalScale * 100) + '%';
+                el('page-num').textContent = num;
+
+                const renderContext = { canvasContext: canvasCtx, viewport: viewport };
+                page.render(renderContext);
+                
+                page.getTextContent().then(textContent => {
+                    el('text-layer').innerHTML = '';
+                    pdfjsLib.renderTextLayer({
+                        textContentSource: textContent,
+                        container: el('text-layer'),
+                        viewport: viewport,
+                        textDivs: []
+                    });
+                });
+            });
+        }
+
+        el('prev-page').onclick = () => { if(pageNum > 1) renderPage(--pageNum); };
+        el('next-page').onclick = () => { if(pdfDoc && pageNum < pdfDoc.numPages) renderPage(++pageNum); };
+        el('zoom-in-btn').onclick = () => { scale += 0.2; renderPage(pageNum); };
+        el('zoom-out-btn').onclick = () => { if(scale > 0.6) scale -= 0.2; renderPage(pageNum); };
+
+        // --- CROP LOGIC ---
+        const canvas = el('pdf-canvas');
+        canvas.addEventListener('mousedown', e => {
+            if(!pdfDoc) return;
+            cropping = true;
+            const r = canvas.getBoundingClientRect();
+            cropStart = { x: e.clientX - r.left, y: e.clientY - r.top };
+            Object.assign(el('crop-box').style, { left: cropStart.x+'px', top: cropStart.y+'px', width:0, height:0, display:'block' });
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if(!cropping) return;
+            const r = canvas.getBoundingClientRect();
+            cropEnd = { x: e.clientX - r.left, y: e.clientY - r.top };
+            const w = Math.abs(cropEnd.x - cropStart.x), h = Math.abs(cropEnd.y - cropStart.y);
+            const l = Math.min(cropStart.x, cropEnd.x), t = Math.min(cropStart.y, cropEnd.y);
+            Object.assign(el('crop-box').style, { left: l+'px', top: t+'px', width: w+'px', height: h+'px' });
+        });
+
+        canvas.addEventListener('mouseup', async e => {
+            if(!cropping) return;
+            cropping = false;
+            el('crop-box').style.display = 'none';
+            const r = canvas.getBoundingClientRect();
+            cropEnd = { x: e.clientX - r.left, y: e.clientY - r.top };
+            const w = Math.abs(cropEnd.x - cropStart.x), h = Math.abs(cropEnd.y - cropStart.y);
+            if(w < 10 || h < 10) return; 
+
+            const l = Math.min(cropStart.x, cropEnd.x), t = Math.min(cropStart.y, cropEnd.y);
+            
+            // High Res Crop
+            const tempC = document.createElement('canvas');
+            const s = 2; // scale factor
+            tempC.width = w * s; tempC.height = h * s;
+            const tCtx = tempC.getContext('2d');
+            tCtx.fillStyle = 'white'; tCtx.fillRect(0,0,tempC.width,tempC.height);
+            tCtx.drawImage(canvas, l, t, w, h, 0, 0, tempC.width, tempC.height);
+
+            // Capture text overlay
+            const spans = el('text-layer').querySelectorAll('span');
+            spans.forEach(span => {
+                const sr = span.getBoundingClientRect();
+                const sl = sr.left - r.left, st = sr.top - r.top;
+                if(sl < l + w && sl + sr.width > l && st < t + h && st + sr.height > t) {
+                    const style = getComputedStyle(span);
+                    const fs = parseFloat(style.fontSize);
+                    tCtx.font = style.font.replace(fs+'px', (fs*s)+'px');
+                    tCtx.fillStyle = style.color;
+                    tCtx.textBaseline = 'hanging';
+                    tCtx.fillText(span.textContent, (sl - l)*s, (st - t)*s);
+                }
+            });
+
+            STATE.tempCroppedImages.push(tempC.toDataURL('image/jpeg', 0.9));
+            updateCropPreviews();
+            el('question-setup-form').classList.remove('hidden');
+            el('setup-placeholder').classList.add('hidden');
+            el('question-setup-form').scrollIntoView({behavior: 'smooth', block: 'center'});
+        });
+
+        function updateCropPreviews() {
+            const c = el('crop-preview-container');
+            c.innerHTML = '';
+            STATE.tempCroppedImages.forEach((img, idx) => {
+                const div = document.createElement('div');
+                div.className = 'relative group flex-shrink-0';
+                div.innerHTML = `<img src="${img}" class="h-16 w-auto rounded border border-slate-300 shadow-sm bg-white">
+                <button onclick="removeCrop(${idx})" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 w-5 h-5 flex items-center justify-center text-xs shadow opacity-0 group-hover:opacity-100 transition-opacity">×</button>`;
+                c.appendChild(div);
+            });
+            if(STATE.tempCroppedImages.length===0) {
+                el('question-setup-form').classList.add('hidden');
+                el('setup-placeholder').classList.remove('hidden');
+            }
+        }
+        window.removeCrop = idx => { STATE.tempCroppedImages.splice(idx, 1); updateCropPreviews(); };
+
+        el('cancel-crop-btn').onclick = () => { STATE.tempCroppedImages = []; updateCropPreviews(); };
+
+        el('add-question-btn').onclick = async () => {
+            if(STATE.tempCroppedImages.length === 0) return;
+            const btn = el('add-question-btn'); btn.innerText = 'Processing...';
+            
+            // Stitch images
+            const imgs = await Promise.all(STATE.tempCroppedImages.map(src => new Promise(r => {const i=new Image(); i.onload=()=>r(i); i.src=src;})));
+            const w = Math.max(...imgs.map(i => i.width));
+            const h = imgs.reduce((a,b) => a + b.height + 10, 0);
+            const cvs = document.createElement('canvas');
+            cvs.width = w; cvs.height = h;
+            const ctx = cvs.getContext('2d');
+            ctx.fillStyle='white'; ctx.fillRect(0,0,w,h);
+            let y=0;
+            imgs.forEach(i => { ctx.drawImage(i, 0, y); y += i.height + 10; });
+            
+            const q = {
+                id: 'q'+Date.now() + Math.random().toString(36).substr(2,5),
+                subject: el('q-subject').value,
+                type: el('q-type').value,
+                image: cvs.toDataURL('image/jpeg', 0.85),
+                options: el('q-type').value === 'Numerical' ? [] : ['A','B','C','D']
+            };
+            STATE.questions.push(q);
+            saveData();
+            renderQuestionsList();
+            STATE.tempCroppedImages = []; updateCropPreviews();
+            btn.innerText = 'Add Question';
+        };
+
+        function renderQuestionsList() {
+            const list = el('question-list');
+            list.innerHTML = '';
+            STATE.questions.forEach((q, idx) => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 group border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all';
+                item.innerHTML = `
+                    <div class="w-12 h-12 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <img src="${q.image}" class="max-w-full max-h-full object-contain">
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="font-medium text-sm text-slate-700 dark:text-slate-200 truncate">Q.${idx+1}</span>
+                            <span class="text-[10px] bg-slate-100 dark:bg-slate-700 px-1.5 rounded text-slate-500 uppercase tracking-wide">${q.subject.substr(0,3)}</span>
+                        </div>
+                        <p class="text-xs text-slate-400 truncate">${q.type}</p>
+                    </div>
+                    <button onclick="deleteQ(${idx})" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                `;
+                list.appendChild(item);
+            });
+            el('question-count-display').textContent = STATE.questions.length;
+            el('start-test-btn').disabled = STATE.questions.length === 0;
+            lucide.createIcons();
+        }
+        window.deleteQ = idx => { 
+            if(confirm('Delete this question?')) { 
+                const qId = STATE.questions[idx].id;
+                delete STATE.answerKey[qId];
+                STATE.questions.splice(idx, 1); 
+                saveData(); 
+                renderQuestionsList(); 
+            }
+        };
+
+        // --- MANUAL ADD ENTRY ---
+        el('manual-add-btn').onclick = () => { el('manual-q-text').value=''; el('manual-q-preview').innerHTML=''; el('manual-add-modal').classList.remove('hidden'); };
+        el('manual-cancel-btn').onclick = () => el('manual-add-modal').classList.add('hidden');
+        el('manual-q-text').addEventListener('input', function() {
+            el('manual-q-preview').innerHTML = this.value;
+            MathJax.typesetPromise([el('manual-q-preview')]);
+        });
+        
+        el('manual-save-btn').onclick = async () => {
+            const txt = el('manual-q-text').value;
+            if(!txt.trim()) { alert("Please enter question text"); return; }
+            
+            const btn = el('manual-save-btn');
+            btn.innerText = 'Rendering...';
+            
+            const renderContainer = document.createElement('div');
+            renderContainer.style.cssText = "position:absolute; left:-9999px; width:600px; padding:30px; background:white; font-family:Inter; font-size:16px; line-height:1.6; color:black;";
+            renderContainer.innerHTML = txt;
+            document.body.appendChild(renderContainer);
+            
+            await MathJax.typesetPromise([renderContainer]);
+            await new Promise(r => setTimeout(r, 200)); 
+            
+            try {
+                const cvs = await html2canvas(renderContainer, { scale: 2, backgroundColor: '#ffffff' });
+                STATE.questions.push({
+                    id: 'q'+Date.now() + Math.random().toString(36).substr(2,5),
+                    subject: el('manual-q-subject').value,
+                    type: el('manual-q-type').value,
+                    image: cvs.toDataURL('image/jpeg', 0.9),
+                    options: el('manual-q-type').value === 'Numerical' ? [] : ['A','B','C','D']
+                });
+                saveData(); 
+                renderQuestionsList();
+                el('manual-add-modal').classList.add('hidden');
+            } catch(e) {
+                console.error("Rendering failed", e);
+                alert("Failed to render image. Please try again.");
+            } finally {
+                document.body.removeChild(renderContainer);
+                btn.innerText = 'Save Question';
+            }
+        };
+
+        // --- ANSWER KEY MANAGEMENT ---
+        el('set-answer-key-btn').onclick = () => {
+            const lst = el('answer-key-list'); lst.innerHTML = '';
+            STATE.questions.forEach((q, i) => {
+                const val = STATE.answerKey[q.id] || [];
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-100 dark:border-slate-700';
+                
+                let inp = '';
+                if(q.type === 'Numerical') {
+                    inp = `<input type="number" step="any" class="key-inp w-24 p-1 border rounded text-sm bg-transparent focus:ring-1 ring-indigo-500 outline-none" data-id="${q.id}" value="${val[0]||''}" placeholder="Ans">`;
+                } else {
+                    inp = `<div class="flex gap-2">${q.options.map(opt => `
+                        <label class="cursor-pointer flex items-center gap-1 text-sm select-none">
+                            <input type="${q.type==='SingleCorrect'?'radio':'checkbox'}" name="k-${q.id}" value="${opt}" ${val.includes(opt)?'checked':''} class="accent-indigo-600"> ${opt}
+                        </label>`).join('')}</div>`;
+                }
+                row.innerHTML = `<span class="font-medium text-sm">Q.${i+1} <span class="text-xs text-slate-400">(${q.type})</span></span> ${inp}`;
+                lst.appendChild(row);
+            });
+            el('answer-key-modal').classList.remove('hidden');
+        };
+        el('answer-key-cancel-btn').onclick = () => el('answer-key-modal').classList.add('hidden');
+        el('answer-key-save-btn').onclick = () => {
+            STATE.questions.forEach(q => {
+                if(q.type==='Numerical') {
+                    const v = document.querySelector(`input[data-id="${q.id}"]`).value;
+                    if(v) STATE.answerKey[q.id] = [v];
+                } else {
+                    const chk = document.querySelectorAll(`input[name="k-${q.id}"]:checked`);
+                    if(chk.length) STATE.answerKey[q.id] = Array.from(chk).map(c=>c.value);
+                }
+            });
+            saveData();
+            el('answer-key-modal').classList.add('hidden');
+        };
+
+        // --- TEST FLOW LOGIC ---
+        el('start-test-btn').onclick = () => {
+             const missing = STATE.questions.filter(q => !STATE.answerKey[q.id] || STATE.answerKey[q.id].length === 0);
+             if(missing.length > 0) {
+                 alert(`Cannot start test: ${missing.length} questions are missing Answer Keys.`);
+                 return;
+             }
+             
+             STATE.currentTestQs = [];
+             ['Physics','Chemistry','Math'].forEach(sub => {
+                 const subQs = STATE.questions.filter(q => q.subject === sub);
+                 ['SingleCorrect','MultipleCorrect','Numerical'].forEach(typ => {
+                     STATE.currentTestQs.push(...subQs.filter(q => q.type === typ));
+                 });
+             });
+             
+             if(STATE.currentTestQs.length === 0 && STATE.questions.length > 0) STATE.currentTestQs = [...STATE.questions];
+
+             const ms = STATE.testSettings.marking;
+             el('instructions-content').innerHTML = `
+                <p><strong>Duration:</strong> ${STATE.testSettings.duration} Minutes</p>
+                <p><strong>Total Questions:</strong> ${STATE.currentTestQs.length}</p>
+                <div class="mt-4 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg text-xs">
+                    <div class="grid grid-cols-3 gap-2 font-bold border-b border-slate-200 dark:border-slate-700 pb-1 mb-1">
+                        <span>Type</span><span>Correct</span><span>Incorrect</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <span>SCQ</span><span>+${ms.SingleCorrect.correct}</span><span class="text-red-500">${ms.SingleCorrect.incorrect}</span>
+                        <span>MCQ</span><span>+${ms.MultipleCorrect.correct}</span><span class="text-red-500">${ms.MultipleCorrect.incorrect}</span>
+                        <span>Num</span><span>+${ms.Numerical.correct}</span><span class="text-red-500">${ms.Numerical.incorrect}</span>
+                    </div>
+                </div>`;
+             el('instructions-modal').classList.remove('hidden');
+        };
+        
+        el('instructions-cancel-btn').onclick = () => el('instructions-modal').classList.add('hidden');
+        
+        el('instructions-start-btn').onclick = () => {
+            el('instructions-modal').classList.add('hidden');
+            STATE.userResponses = {};
+            STATE.qStatus = new Array(STATE.currentTestQs.length).fill('not-visited');
+            STATE.timeLeft = STATE.testSettings.duration * 60;
+            STATE.currentQuestionIndex = 0;
+            STATE.timePerQuestion = {};
+            STATE.currentTestQs.forEach(q => STATE.timePerQuestion[q.id] = 0);
+            STATE.lastQuestionChangeTimestamp = Date.now();
+            STATE.isPaused = false;
+            
+            startTimer();
+            loadQuestion(0);
+            renderNavGrid();
+            showPage('test');
+        };
+
+        // --- TIMER & PAUSE LOGIC ---
+        function startTimer() {
+            if(STATE.timerInterval) clearInterval(STATE.timerInterval);
+            const display = el('test-timer');
+            STATE.timerInterval = setInterval(() => {
+                if(STATE.isPaused) return;
+                STATE.timeLeft--;
+                const h = Math.floor(STATE.timeLeft / 3600);
+                const m = Math.floor((STATE.timeLeft % 3600) / 60);
+                const s = STATE.timeLeft % 60;
+                display.textContent = `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                if(STATE.timeLeft <= 0) {
+                    clearInterval(STATE.timerInterval);
+                    alert("Time's up! Submitting test automatically.");
+                    finishTest();
+                }
+            }, 1000);
+        }
+
+        function updateTimeSpent() {
+            if(STATE.lastQuestionChangeTimestamp && !STATE.isPaused) {
+                const now = Date.now();
+                const diffSec = (now - STATE.lastQuestionChangeTimestamp) / 1000;
+                const qId = STATE.currentTestQs[STATE.currentQuestionIndex].id;
+                STATE.timePerQuestion[qId] = (STATE.timePerQuestion[qId] || 0) + diffSec;
+                STATE.lastQuestionChangeTimestamp = now;
+            }
+        }
+
+        window.togglePause = () => {
+            if(STATE.isPaused) {
+                STATE.isPaused = false;
+                STATE.lastQuestionChangeTimestamp = Date.now();
+                el('pause-overlay').classList.add('hidden');
+                el('pause-test-btn').innerText = 'Pause';
+                el('pause-test-btn').classList.replace('bg-amber-100', 'bg-transparent');
+            } else {
+                updateTimeSpent();
+                STATE.isPaused = true;
+                STATE.lastQuestionChangeTimestamp = null;
+                el('pause-overlay').classList.remove('hidden');
+                el('pause-test-btn').innerText = 'Resume';
+            }
+        };
+        el('pause-test-btn').onclick = togglePause;
+
+        function loadQuestion(idx) {
+            if(idx < 0 || idx >= STATE.currentTestQs.length) return;
+            updateTimeSpent();
+            STATE.currentQuestionIndex = idx;
+            const q = STATE.currentTestQs[idx];
+            
+            if(STATE.qStatus[idx] === 'not-visited') STATE.qStatus[idx] = 'not-answered';
+            
+            el('q-number-subject').textContent = `Question ${idx+1} | ${q.subject}`;
+            el('q-type-badge').textContent = q.type === 'SingleCorrect' ? 'SCQ' : q.type === 'MultipleCorrect' ? 'MCQ' : 'Integer';
+            el('q-image').src = q.image;
+            
+            const optsArea = el('q-options-area');
+            const numArea = el('q-numerical-area');
+            const numInput = el('q-numerical-input');
+            const existingResp = STATE.userResponses[q.id] || [];
+
+            optsArea.innerHTML = '';
+            if(q.type === 'Numerical') {
+                optsArea.classList.add('hidden');
+                numArea.classList.remove('hidden');
+                numInput.value = existingResp[0] || '';
+                numInput.oninput = (e) => STATE.userResponses[q.id] = [e.target.value];
+            } else {
+                numArea.classList.add('hidden');
+                optsArea.classList.remove('hidden');
+                q.options.forEach(opt => {
+                    const isSelected = existingResp.includes(opt);
+                    const btn = document.createElement('div');
+                    const baseClass = "cursor-pointer p-3 rounded-xl border transition-all flex items-center gap-3";
+                    const activeClass = "bg-indigo-50 border-indigo-500 dark:bg-indigo-900/30 dark:border-indigo-500";
+                    const inactiveClass = "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800";
+                    btn.className = `${baseClass} ${isSelected ? activeClass : inactiveClass}`;
+                    btn.innerHTML = `
+                        <div class="w-6 h-6 rounded-full border ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 text-transparent'} flex items-center justify-center text-xs font-bold transition-all">${opt}</div>
+                        <span class="font-medium text-slate-700 dark:text-slate-200">${opt}</span>
+                    `;
+                    btn.onclick = () => {
+                        if(STATE.isPaused) return;
+                        if(q.type === 'SingleCorrect') STATE.userResponses[q.id] = [opt];
+                        else {
+                            let current = STATE.userResponses[q.id] || [];
+                            if(current.includes(opt)) current = current.filter(x => x !== opt);
+                            else current.push(opt);
+                            STATE.userResponses[q.id] = current;
+                        }
+                        loadQuestion(STATE.currentQuestionIndex);
+                    };
+                    optsArea.appendChild(btn);
+                });
+            }
+            updateNavGridUI();
+        }
+
+        function renderNavGrid() {
+            const p = el('q-nav-panel'); p.innerHTML = '';
+            STATE.currentTestQs.forEach((q, i) => {
+                const b = document.createElement('button');
+                b.id = `nav-btn-${i}`;
+                b.textContent = i+1;
+                b.className = `w-9 h-9 rounded-lg text-sm font-bold transition-all border`;
+                b.onclick = () => { if(!STATE.isPaused) loadQuestion(i); };
+                p.appendChild(b);
+            });
+            updateNavGridUI();
+        }
+
+        function updateNavGridUI() {
+            STATE.currentTestQs.forEach((q, i) => {
+                const b = el(`nav-btn-${i}`);
+                if(!b) return;
+                b.className = `w-9 h-9 rounded-lg text-sm font-bold transition-all border`;
+                const s = STATE.qStatus[i];
+                if(s === 'answered') b.classList.add('q-status-answered');
+                else if(s === 'review') b.classList.add('q-status-review');
+                else if(s === 'not-answered') b.classList.add('q-status-not-answered');
+                else b.classList.add('q-status-not-visited');
+                if(i === STATE.currentQuestionIndex) b.classList.add('q-status-current');
+            });
+        }
+
+        function handleNext(markReview) {
+            if(STATE.isPaused) return; 
+            const idx = STATE.currentQuestionIndex;
+            const q = STATE.currentTestQs[idx];
+            const resp = STATE.userResponses[q.id];
+            const hasResponse = resp && resp.length > 0 && resp[0] !== '';
+            
+            if(markReview) STATE.qStatus[idx] = 'review';
+            else {
+                if(hasResponse) STATE.qStatus[idx] = 'answered';
+                else STATE.qStatus[idx] = 'not-answered';
+            }
+            if(idx < STATE.currentTestQs.length - 1) loadQuestion(idx + 1);
+            else updateNavGridUI();
+        }
+
+        el('save-next-btn').onclick = () => handleNext(false);
+        el('mark-review-btn').onclick = () => handleNext(true);
+        el('clear-response-btn').onclick = () => {
+            if(STATE.isPaused) return;
+            const qId = STATE.currentTestQs[STATE.currentQuestionIndex].id;
+            delete STATE.userResponses[qId];
+            STATE.qStatus[STATE.currentQuestionIndex] = 'not-answered';
+            loadQuestion(STATE.currentQuestionIndex);
+        };
+        el('submit-test-btn').onclick = () => {
+            if(STATE.isPaused) return;
+            const attempted = STATE.qStatus.filter(s => s === 'answered' || s === 'review').length;
+            if(confirm(`You have attempted ${attempted} out of ${STATE.currentTestQs.length}. Submit Test?`)) finishTest();
+        };
+
+        // --- RESULTS LOGIC ---
+        function finishTest() {
+            updateTimeSpent();
+            if(STATE.timerInterval) clearInterval(STATE.timerInterval);
+            STATE.lastQuestionChangeTimestamp = null;
+            
+            let score = 0, correctCount = 0, incorrectCount = 0, unattemptedCount = 0;
+            const stats = { Physics: {c:0, w:0, u:0}, Chemistry: {c:0, w:0, u:0}, Math: {c:0, w:0, u:0} };
+            
+            STATE.currentTestQs.forEach(q => {
+                const userAns = STATE.userResponses[q.id] || [];
+                const key = STATE.answerKey[q.id] || [];
+                const marking = STATE.testSettings.marking[q.type];
+                
+                if(!stats[q.subject]) stats[q.subject] = {c:0, w:0, u:0};
+                
+                if(userAns.length === 0 || userAns[0] === '') {
+                    unattemptedCount++; stats[q.subject].u++;
+                } else {
+                    let isCorrect = false;
+                    if(q.type === 'Numerical') {
+                        const uVal = parseFloat(userAns[0]), kVal = parseFloat(key[0]);
+                        if(!isNaN(uVal) && !isNaN(kVal) && Math.abs(uVal - kVal) < 0.000001) isCorrect = true;
+                    } else {
+                        if(JSON.stringify([...userAns].sort()) === JSON.stringify([...key].sort())) isCorrect = true;
+                    }
+                    if(isCorrect) { score += marking.correct; correctCount++; stats[q.subject].c++; } 
+                    else { score += marking.incorrect; incorrectCount++; stats[q.subject].w++; }
+                }
+            });
+            
+            el('total-score').textContent = score;
+            el('correct-count').textContent = correctCount;
+            el('incorrect-count').textContent = incorrectCount;
+            el('unattempted-count').textContent = unattemptedCount;
+            
+            const totalQs = STATE.currentTestQs.length;
+            const totalTime = Object.values(STATE.timePerQuestion).reduce((a,b)=>a+b, 0);
+            el('avg-time-overall').textContent = totalQs ? (totalTime / totalQs).toFixed(1) + 's' : '0s';
+
+            ['Physics', 'Chemistry', 'Math'].forEach(sub => {
+                 const qs = STATE.currentTestQs.filter(q => q.subject === sub);
+                 const time = qs.reduce((acc, q) => acc + (STATE.timePerQuestion[q.id] || 0), 0);
+                 const avg = qs.length ? (time / qs.length).toFixed(1) + 's' : '0s';
+                 if(sub === 'Physics') el('avg-time-phy').textContent = avg;
+                 if(sub === 'Chemistry') el('avg-time-chem').textContent = avg;
+                 if(sub === 'Math') el('avg-time-math').textContent = avg;
+                 const sData = stats[sub];
+                 const containerId = sub.toLowerCase() + '-results';
+                 if(el(containerId)) {
+                    el(containerId).innerHTML = `
+                        <h5 class="font-bold text-slate-700 dark:text-slate-200 mb-2">${sub}</h5>
+                        <div class="space-y-1 text-sm">
+                            <div class="flex justify-between"><span class="text-green-600">Correct</span> <span>${sData.c}</span></div>
+                            <div class="flex justify-between"><span class="text-red-500">Incorrect</span> <span>${sData.w}</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Unattempted</span> <span>${sData.u}</span></div>
+                        </div>`;
+                 }
+            });
+            
+            showPage('result');
+            renderDetailedReview('all');
+            renderCharts(correctCount, incorrectCount, unattemptedCount, stats);
+        }
+
+        let charts = {}; 
+        
+        function renderCharts(c, w, u, stats) {
+            if(charts.dist) charts.dist.destroy();
+            if(charts.sub) charts.sub.destroy();
+
+            const ctx1 = el('chart-distribution').getContext('2d');
+            charts.dist = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Correct', 'Incorrect', 'Unattempted'],
+                    datasets: [{
+                        data: [c, w, u],
+                        backgroundColor: ['#22c55e', '#ef4444', '#94a3b8'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            const ctx2 = el('chart-subjects').getContext('2d');
+            const subjects = Object.keys(stats);
+            charts.sub = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: subjects,
+                    datasets: [
+                        { label: 'Correct', data: subjects.map(s => stats[s].c), backgroundColor: '#22c55e' },
+                        { label: 'Incorrect', data: subjects.map(s => stats[s].w), backgroundColor: '#ef4444' }
+                    ]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' } }, x: { grid: { display: false } } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        function renderDetailedReview(filter) {
+            const container = el('review-section'); container.innerHTML = '';
+            STATE.currentTestQs.forEach((q, i) => {
+                const u = STATE.userResponses[q.id] || [];
+                const k = STATE.answerKey[q.id] || [];
+                let status = 'unattempted';
+                let isCorrect = false;
+                if(u.length > 0 && u[0] !== '') {
+                    if(q.type === 'Numerical') isCorrect = Math.abs(parseFloat(u[0]) - parseFloat(k[0])) < 0.0001;
+                    else isCorrect = JSON.stringify([...u].sort()) === JSON.stringify([...k].sort());
+                    status = isCorrect ? 'correct' : 'incorrect';
+                }
+                if(filter !== 'all' && filter !== status) return;
+                const timeSpent = STATE.timePerQuestion[q.id] || 0;
+                
+                const card = document.createElement('div');
+                const borderClass = status === 'correct' ? 'border-l-green-500 bg-green-50/50 dark:bg-green-900/10' : 
+                                   status === 'incorrect' ? 'border-l-red-500 bg-red-50/50 dark:bg-red-900/10' : 
+                                   'border-l-slate-400 bg-slate-50 dark:bg-slate-800';
+                card.className = `p-4 rounded-xl border border-slate-200 dark:border-slate-700 border-l-4 ${borderClass}`;
+                card.innerHTML = `
+                    <div class="flex justify-between mb-2">
+                        <span class="font-bold text-sm">Q.${i+1} ${q.subject}</span>
+                        <div class="flex gap-2">
+                            <span class="text-xs font-mono px-2 py-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                                <i data-lucide="clock" class="w-3 h-3"></i> ${timeSpent.toFixed(1)}s
+                            </span>
+                            <span class="text-xs font-mono uppercase px-2 py-1 rounded bg-white dark:bg-black/20">${status}</span>
+                        </div>
+                    </div>
+                    <img src="${q.image}" class="max-h-40 mb-3 border rounded bg-white mx-auto">
+                    <div class="grid grid-cols-2 gap-4 text-sm mt-2 border-t border-slate-200 dark:border-slate-700 pt-2">
+                        <div>
+                            <span class="text-slate-500 block text-xs uppercase font-bold">Your Answer</span> 
+                            <span class="font-mono font-bold ${status==='correct'?'text-green-600':status==='incorrect'?'text-red-500':'text-slate-400'}">
+                                ${u.join(', ') || 'Not Attempted'}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block text-xs uppercase font-bold">Correct Answer</span> 
+                            <span class="font-mono font-bold text-green-600">${k.join(', ')}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+        
+        document.querySelectorAll('.review-filter-btn').forEach(btn => {
+            btn.onclick = function() {
+                document.querySelectorAll('.review-filter-btn').forEach(b => {
+                    b.classList.remove('bg-indigo-600', 'text-white');
+                    b.classList.add('bg-white', 'text-slate-600', 'border');
+                    if(document.documentElement.classList.contains('dark')) b.classList.add('dark:bg-slate-800', 'dark:text-slate-300');
+                });
+                this.classList.remove('bg-white', 'text-slate-600', 'border', 'dark:bg-slate-800', 'dark:text-slate-300');
+                this.classList.add('bg-indigo-600', 'text-white');
+                renderDetailedReview(this.dataset.filter);
+            }
+        });
+        
+        el('review-answers-btn').onclick = () => { el('review-controls').classList.remove('hidden'); el('review-controls').scrollIntoView({behavior:'smooth'}); };
+        el('back-to-home-btn').onclick = () => showPage('setup');
+
+        // --- ENHANCED PDF REPORT ---
+        el('download-result-btn').onclick = async () => {
+            if(!STATE.currentTestQs.length) return;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            // 1. Header
+            doc.setFillColor(79, 70, 229); // Indigo
+            doc.rect(0, 0, pageWidth, 20, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(14);
+            doc.text("CledBT - Detailed Performance Report", 14, 13);
+            
+            // 2. Summary Stats
+            doc.setTextColor(40, 40, 40);
+            doc.setFontSize(10);
+            const score = el('total-score').innerText;
+            const correct = el('correct-count').innerText;
+            const incorrect = el('incorrect-count').innerText;
+            const unatt = el('unattempted-count').innerText;
+            const avgTime = el('avg-time-overall').innerText;
+            const totalTime = (Object.values(STATE.timePerQuestion).reduce((a,b)=>a+b, 0) / 60).toFixed(1) + ' min';
+
+            let yPos = 30;
+            doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, yPos);
+            doc.text(`Total Questions: ${STATE.currentTestQs.length}`, 80, yPos);
+            doc.text(`Duration Used: ${totalTime}`, 140, yPos);
+            yPos += 6;
+            doc.text(`Total Score: ${score}`, 14, yPos);
+            doc.text(`Avg Time/Q: ${avgTime}`, 80, yPos);
+            yPos += 10;
+
+            // 3. Subject Wise Table
+            const subjects = ['Physics', 'Chemistry', 'Math'];
+            const subData = subjects.map(s => {
+                // calculate on fly or retrieve from cached stats if preferred
+                const qs = STATE.currentTestQs.filter(q => q.subject === s);
+                let c=0, w=0, u=0, t=0;
+                qs.forEach(q => {
+                    const ans = STATE.userResponses[q.id] || [];
+                    const key = STATE.answerKey[q.id] || [];
+                    if(!ans.length || ans[0]==='') u++;
+                    else {
+                        let isC = false;
+                        if(q.type==='Numerical') isC = (Math.abs(parseFloat(ans[0])-parseFloat(key[0]))<0.0001);
+                        else isC = JSON.stringify([...ans].sort())===JSON.stringify([...key].sort());
+                        if(isC) c++; else w++;
+                    }
+                    t += (STATE.timePerQuestion[q.id] || 0);
+                });
+                return [s, qs.length, c, w, u, (qs.length ? (t/qs.length).toFixed(1)+'s' : '0s')];
+            });
+
+            doc.autoTable({
+                startY: yPos,
+                head: [['Subject', 'Total Q', 'Correct', 'Incorrect', 'Unattempted', 'Avg Time']],
+                body: subData,
+                theme: 'striped',
+                headStyles: { fillColor: [79, 70, 229] },
+                styles: { fontSize: 9 }
+            });
+
+            yPos = doc.lastAutoTable.finalY + 10;
+
+            // 4. Charts (Capture and Add)
+            if(charts.dist && charts.sub) {
+                try {
+                    const img1 = charts.dist.toBase64Image();
+                    const img2 = charts.sub.toBase64Image();
+                    
+                    // Check if space exists
+                    if (yPos + 80 > doc.internal.pageSize.getHeight()) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+
+                    doc.setFontSize(10);
+                    doc.text("Performance Distribution", 40, yPos);
+                    doc.text("Subject-wise Accuracy", 130, yPos);
+                    
+                    doc.addImage(img1, 'PNG', 20, yPos + 5, 70, 70);
+                    doc.addImage(img2, 'PNG', 110, yPos + 5, 80, 70);
+                    
+                    yPos += 85;
+                } catch(e) { console.error("Chart capture failed", e); }
+            }
+
+            // 5. Detailed Question Table
+            doc.setFontSize(12);
+            doc.text("Detailed Question Analysis", 14, yPos);
+            yPos += 5;
+
+            const qRows = STATE.currentTestQs.map((q, i) => {
+                const u = STATE.userResponses[q.id] || [];
+                const k = STATE.answerKey[q.id] || [];
+                let status = 'Unattempted';
+                if(u.length && u[0]!=='') {
+                    if(q.type==='Numerical') status = (Math.abs(parseFloat(u[0])-parseFloat(k[0]))<0.0001) ? 'Correct' : 'Incorrect';
+                    else status = (JSON.stringify([...u].sort()) === JSON.stringify([...k].sort())) ? 'Correct' : 'Incorrect';
+                }
+                const time = (STATE.timePerQuestion[q.id] || 0).toFixed(1) + 's';
+                
+                // Add tiny thumb placeholder - adding actual images is heavy, maybe next iteration
+                return [i+1, q.subject, q.type, status, u.join(','), k.join(','), time];
+            });
+
+            doc.autoTable({
+                startY: yPos,
+                head: [['Q#', 'Subject', 'Type', 'Status', 'Your Ans', 'Correct', 'Time']],
+                body: qRows,
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [51, 65, 85] },
+                columnStyles: {
+                    0: {cellWidth: 10}, 
+                    3: {fontStyle: 'bold'},
+                    6: {halign: 'right'}
+                },
+                didParseCell: function(data) {
+                    if(data.column.index === 3 && data.section === 'body') {
+                        if(data.cell.raw === 'Correct') data.cell.styles.textColor = [34, 197, 94];
+                        if(data.cell.raw === 'Incorrect') data.cell.styles.textColor = [239, 68, 68];
+                    }
+                }
+            });
+
+            doc.save('CBT_Detailed_Report.pdf');
+        };
+
+        // --- UTILS: EXPORT/IMPORT/CLEAR ---
+        el('export-json-btn').onclick = () => {
+            const data = { questions: STATE.questions, answerKey: STATE.answerKey, testSettings: STATE.testSettings };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type : 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'CBT_Data_Backup.json';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        };
+
+        el('import-json-input').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = evt => {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    if(data.questions) STATE.questions = data.questions;
+                    if(data.answerKey) STATE.answerKey = data.answerKey;
+                    if(data.testSettings) STATE.testSettings = data.testSettings;
+                    saveData();
+                    renderQuestionsList();
+                    alert('Data imported successfully!');
+                } catch(err) { alert('Invalid JSON file'); }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        });
+        
+        el('download-pdf-btn').onclick = () => {
+            if(!STATE.questions.length) return;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({orientation:'l', unit:'pt', format:[842, 595]}); 
+            STATE.questions.forEach((q, i) => {
+                if(i>0) doc.addPage();
+                doc.setFontSize(10).text(`Q.${i+1} [${q.subject}] - ${q.type}`, 30, 30);
+                
+                const img = new Image(); img.src = q.image;
+                const r = img.width/img.height;
+                let w = 780, h = w/r;
+                if(h > 450) { h=450; w=h*r; }
+                
+                doc.addImage(q.image, 'JPEG', 421-(w/2), 60, w, h);
+                const k = STATE.answerKey[q.id] ? STATE.answerKey[q.id].join(',') : 'NA';
+                doc.text(`Correct Answer: ${k}`, 800, 550, {align:'right'});
+            });
+            doc.save('CBT_Questions_Bank.pdf');
+        };
+
+        // --- SETTINGS UI ---
+        el('settings-btn').onclick = () => {
+            const ts = STATE.testSettings;
+            el('test-duration').value = ts.duration;
+            el('scq-correct').value = ts.marking.SingleCorrect.correct;
+            el('scq-incorrect').value = ts.marking.SingleCorrect.incorrect;
+            el('mcq-correct').value = ts.marking.MultipleCorrect.correct;
+            el('mcq-incorrect').value = ts.marking.MultipleCorrect.incorrect;
+            el('num-correct').value = ts.marking.Numerical.correct;
+            el('num-incorrect').value = ts.marking.Numerical.incorrect;
+            el('settings-modal').classList.remove('hidden');
+        };
+        el('settings-cancel-btn').onclick = () => el('settings-modal').classList.add('hidden');
+        el('settings-save-btn').onclick = () => {
+            STATE.testSettings.duration = parseInt(el('test-duration').value) || 180;
+            STATE.testSettings.marking.SingleCorrect.correct = parseFloat(el('scq-correct').value) || 4;
+            STATE.testSettings.marking.SingleCorrect.incorrect = parseFloat(el('scq-incorrect').value) || -1;
+            STATE.testSettings.marking.MultipleCorrect.correct = parseFloat(el('mcq-correct').value) || 4;
+            STATE.testSettings.marking.MultipleCorrect.incorrect = parseFloat(el('mcq-incorrect').value) || -1;
+            STATE.testSettings.marking.Numerical.correct = parseFloat(el('num-correct').value) || 4;
+            STATE.testSettings.marking.Numerical.incorrect = parseFloat(el('num-incorrect').value) || 0;
+            saveData();
+            el('settings-modal').classList.add('hidden');
+        };
+        
+        el('clear-data-btn').onclick = () => {
+            if(confirm('DANGER: This will delete ALL questions and settings. Are you sure?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // --- INITIALIZATION ---
+        loadData();
+        applyTheme(localStorage.getItem('theme') || 'light');
+    </script>
+</body>
+</html>
