@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CledBT | Modern CBT</title>
+    <title>CledBT | Modern CBT (Fixed)</title>
     
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,14 +21,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
-    <!-- MathJax (Updated Config for Display Math) -->
+    <!-- MathJax (Fixed Config) -->
     <script>
       MathJax = {
         tex: { 
             inlineMath: [['$', '$'], ['\\(', '\\)']],
-            displayMath: [['$$', '$$'], ['\\[', '\\]']] 
+            displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            processEscapes: true
         },
-        svg: { fontCache: 'none' }
+        svg: { 
+            fontCache: 'none', // Vital for html2canvas
+            scale: 1,
+            minScale: 1
+        },
+        startup: {
+            typeset: false // We control rendering manually to prevent flickering
+        }
       };
     </script>
     <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
@@ -41,7 +49,7 @@
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
                         slate: { 850: '#151f2e', 950: '#020617' },
-                        primary: { 500: '#6366f1', 600: '#4f46e5' } // Indigo
+                        primary: { 500: '#6366f1', 600: '#4f46e5' }
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.3s ease-out',
@@ -64,6 +72,44 @@
             touch-action: manipulation;
         }
         
+        /* --- MATHJAX ALIGNMENT FIXES (UPDATED) --- */
+        
+        /* Goal 1: Shared Typography Class for Preview & Render 
+           Ensures What You See Is What You Get
+        */
+        .question-text-preview,
+        .question-text-render {
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #0f172a; /* Slate 900 */
+        }
+
+        /* Inline Math alignment tweak */
+        .question-text-preview mjx-container[jax="SVG"]:not([display="true"]),
+        .question-text-render mjx-container[jax="SVG"]:not([display="true"]) {
+            display: inline-block !important;
+            vertical-align: -0.08em !important; /* Tuned baseline for Inter */
+            margin: 0 1px !important;
+        }
+
+        /* Block Math styling */
+        .question-text-preview mjx-container[jax="SVG"][display="true"],
+        .question-text-render mjx-container[jax="SVG"][display="true"] {
+            display: block !important;
+            text-align: center !important;
+            margin: 1em 0 !important;
+            transform: none !important;
+        }
+
+        /* SVG internal display fix */
+        mjx-container[jax="SVG"] > svg {
+            display: inline-block !important;
+            vertical-align: inherit !important;
+        }
+        
+        /* --- END MATHJAX FIXES --- */
+
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -316,7 +362,6 @@
         </div>
 
         <!-- VIEW 2: Test Interface -->
-        <!-- Responsive adjustment: h-auto on mobile with padding-bottom for sticky footer, h-calc on desktop -->
         <div id="test-page" class="hidden p-4 md:p-6 max-w-7xl mx-auto lg:h-[calc(100vh-80px)] h-auto min-h-screen relative pb-28 lg:pb-6">
             
             <!-- Pause Overlay -->
@@ -470,22 +515,27 @@
     </main>
 
     <!-- Modals -->
-    <!-- Manual Add Modal -->
+    <!-- Manual Add Modal (Updated for Edit Mode) -->
     <div id="manual-add-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
         <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
             <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                <h3 class="font-bold text-lg">Manual Question Entry</h3>
+                <h3 class="font-bold text-lg">Question Editor</h3>
                 <button id="manual-cancel-btn" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-4 overflow-y-auto flex-grow space-y-4">
-                <div>
-                    <label class="block text-sm font-medium mb-1">Question Text (LaTeX supported)</label>
-                    <textarea id="manual-q-text" rows="4" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm" placeholder="e.g., Find $x$ if $$\int_0^1 x^2 dx = ?$$"></textarea>
+                <!-- Wrapper for text/preview to easily hide for Crop edits -->
+                <div id="manual-q-text-group">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Question Text (LaTeX supported)</label>
+                        <textarea id="manual-q-text" rows="4" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm" placeholder="e.g., Find $x$ if $$\int_0^1 x^2 dx = ?$$"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Preview</label>
+                        <!-- Added question-text-preview class here -->
+                        <div id="manual-q-preview" class="question-text-preview p-4 border border-slate-200 dark:border-slate-700 rounded-xl min-h-[4rem] bg-white dark:bg-slate-950"></div>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Preview</label>
-                    <div id="manual-q-preview" class="p-4 border border-slate-200 dark:border-slate-700 rounded-xl min-h-[4rem] bg-white dark:bg-slate-950"></div>
-                </div>
+                
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Subject</label>
@@ -582,6 +632,7 @@
         // --- GLOBAL STATE ---
         const STATE = {
             questions: [],
+            editingQuestionIndex: null, // Track which question is being edited
             answerKey: {},
             testSettings: {
                 duration: 180,
@@ -826,6 +877,8 @@
             
             const q = {
                 id: 'q'+Date.now() + Math.random().toString(36).substr(2,5),
+                source: 'crop',    // Track source
+                rawText: null,     // No raw text for crops
                 subject: el('q-subject').value,
                 type: el('q-type').value,
                 image: cvs.toDataURL('image/jpeg', 0.85),
@@ -843,7 +896,11 @@
             list.innerHTML = '';
             STATE.questions.forEach((q, idx) => {
                 const item = document.createElement('div');
-                item.className = 'flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 group border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all';
+                // Added cursor-pointer to indicate clickability
+                item.className = 'flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 group border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all cursor-pointer';
+                // Click handler for editing
+                item.onclick = (e) => openQuestionEditor(idx);
+
                 item.innerHTML = `
                     <div class="w-12 h-12 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0">
                         <img src="${q.image}" class="max-w-full max-h-full object-contain">
@@ -855,7 +912,8 @@
                         </div>
                         <p class="text-xs text-slate-400 truncate">${q.type}</p>
                     </div>
-                    <button onclick="deleteQ(${idx})" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <!-- Added stopPropagation to delete button -->
+                    <button onclick="event.stopPropagation(); deleteQ(${idx})" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 `;
                 list.appendChild(item);
             });
@@ -863,6 +921,7 @@
             el('start-test-btn').disabled = STATE.questions.length === 0;
             lucide.createIcons();
         }
+        
         window.deleteQ = idx => { 
             if(confirm('Delete this question?')) { 
                 const qId = STATE.questions[idx].id;
@@ -873,47 +932,169 @@
             }
         };
 
-        // --- MANUAL ADD ENTRY ---
-        el('manual-add-btn').onclick = () => { el('manual-q-text').value=''; el('manual-q-preview').innerHTML=''; el('manual-add-modal').classList.remove('hidden'); };
-        el('manual-cancel-btn').onclick = () => el('manual-add-modal').classList.add('hidden');
+        // --- MANUAL ADD ENTRY (FIXED & EDITABLE) ---
+        
+        // Debounce utility to prevent flickering
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // Open Modal Logic
+        function openQuestionEditor(index) {
+            STATE.editingQuestionIndex = index;
+            const modal = el('manual-add-modal');
+            const saveBtn = el('manual-save-btn');
+            
+            if (index === null) {
+                // NEW QUESTION MODE
+                el('manual-q-text').value = ''; 
+                el('manual-q-preview').innerHTML = ''; 
+                el('manual-q-text-group').classList.remove('hidden'); // Ensure text area is visible
+                saveBtn.innerText = 'Save Question';
+            } else {
+                // EDIT MODE
+                const q = STATE.questions[index];
+                el('manual-q-subject').value = q.subject;
+                el('manual-q-type').value = q.type;
+
+                if (q.source === 'crop') {
+                    // For crop questions, hide text inputs, only allow metadata edit
+                    el('manual-q-text-group').classList.add('hidden');
+                    saveBtn.innerText = 'Update Metadata';
+                } else {
+                    // For manual questions, fill text and render preview
+                    el('manual-q-text-group').classList.remove('hidden');
+                    el('manual-q-text').value = q.rawText || '';
+                    const preview = el('manual-q-preview');
+                    preview.innerHTML = q.rawText || '';
+                    preview.style.color = 'inherit';
+                    MathJax.typesetPromise([preview]);
+                    saveBtn.innerText = 'Update Question';
+                }
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeManualModal() {
+            el('manual-add-modal').classList.add('hidden');
+            STATE.editingQuestionIndex = null;
+        }
+
+        el('manual-add-btn').onclick = () => openQuestionEditor(null);
+        el('manual-cancel-btn').onclick = () => closeManualModal();
+        
+        // Debounced Input Handler
+        const handleInput = debounce(async function(val) {
+            const preview = el('manual-q-preview');
+            preview.innerHTML = val;
+            // Force inherit to ensure styles match normal text
+            preview.style.color = 'inherit';
+            await MathJax.typesetPromise([preview]);
+        }, 300);
+
         el('manual-q-text').addEventListener('input', function() {
-            el('manual-q-preview').innerHTML = this.value;
-            MathJax.typesetPromise([el('manual-q-preview')]);
+            handleInput(this.value);
         });
         
         el('manual-save-btn').onclick = async () => {
+            const subject = el('manual-q-subject').value;
+            const type = el('manual-q-type').value;
+            const isEdit = STATE.editingQuestionIndex !== null;
+            
+            // --- SCENARIO 1: Editing a Crop Question (Metadata only) ---
+            if (isEdit && STATE.questions[STATE.editingQuestionIndex].source === 'crop') {
+                const q = STATE.questions[STATE.editingQuestionIndex];
+                
+                // If type changed, clear answer key and reset options
+                if (q.type !== type) {
+                    delete STATE.answerKey[q.id];
+                    q.options = type === 'Numerical' ? [] : ['A','B','C','D'];
+                }
+                q.subject = subject;
+                q.type = type;
+                
+                saveData();
+                renderQuestionsList();
+                closeManualModal();
+                return;
+            }
+
+            // --- SCENARIO 2: Manual Question (New or Edit) ---
             const txt = el('manual-q-text').value;
             if(!txt.trim()) { alert("Please enter question text"); return; }
             
             const btn = el('manual-save-btn');
+            const originalText = btn.innerText;
             btn.innerText = 'Rendering...';
             
+            // GOAL 3: Use class-based styling for consistent rendering
             const renderContainer = document.createElement('div');
-            renderContainer.style.cssText = "position:absolute; left:-9999px; width:600px; padding:30px; background:white; font-family:Inter; font-size:16px; line-height:1.6; color:black;";
+            renderContainer.className = 'question-text-render'; // Apply shared class
+            renderContainer.style.cssText = `
+                position: absolute; 
+                left: -9999px; 
+                top: 0;
+                width: 650px; 
+                padding: 40px; 
+                background: white; 
+                /* Font properties handled by CSS class now */
+            `;
             renderContainer.innerHTML = txt;
             document.body.appendChild(renderContainer);
             
-            await MathJax.typesetPromise([renderContainer]);
-            await new Promise(r => setTimeout(r, 200)); 
-            
             try {
-                const cvs = await html2canvas(renderContainer, { scale: 2, backgroundColor: '#ffffff' });
-                STATE.questions.push({
-                    id: 'q'+Date.now() + Math.random().toString(36).substr(2,5),
-                    subject: el('manual-q-subject').value,
-                    type: el('manual-q-type').value,
-                    image: cvs.toDataURL('image/jpeg', 0.9),
-                    options: el('manual-q-type').value === 'Numerical' ? [] : ['A','B','C','D']
+                // Wait for MathJax to fully render SVGs
+                await MathJax.typesetPromise([renderContainer]);
+                await new Promise(r => setTimeout(r, 100)); // Buffer for layout
+                
+                const cvs = await html2canvas(renderContainer, { 
+                    scale: 2, 
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    useCORS: true
                 });
+                
+                const imageData = cvs.toDataURL('image/jpeg', 0.9);
+                const options = type === 'Numerical' ? [] : ['A','B','C','D'];
+
+                if (isEdit) {
+                    const q = STATE.questions[STATE.editingQuestionIndex];
+                    // Reset key if type changed
+                    if (q.type !== type) {
+                        delete STATE.answerKey[q.id];
+                    }
+                    // Update fields
+                    q.subject = subject;
+                    q.type = type;
+                    q.rawText = txt;
+                    q.image = imageData;
+                    q.options = options;
+                } else {
+                    // Create New
+                    STATE.questions.push({
+                        id: 'q'+Date.now() + Math.random().toString(36).substr(2,5),
+                        source: 'manual',
+                        rawText: txt,
+                        subject: subject,
+                        type: type,
+                        image: imageData,
+                        options: options
+                    });
+                }
+
                 saveData(); 
                 renderQuestionsList();
-                el('manual-add-modal').classList.add('hidden');
+                closeManualModal();
             } catch(e) {
                 console.error("Rendering failed", e);
                 alert("Failed to render image. Please try again.");
             } finally {
-                document.body.removeChild(renderContainer);
-                btn.innerText = 'Save Question';
+                if(document.body.contains(renderContainer)) document.body.removeChild(renderContainer);
+                btn.innerText = originalText;
             }
         };
 
