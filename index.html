@@ -3,44 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CledBT | Modern CBT (Fixed)</title>
+    <title>CledBT | Professional Exam Simulator</title>
     
-    <!-- Fonts & Icons -->
+    <!-- ==========================================
+         EXTERNAL LIBRARIES & RESOURCES
+    =========================================== -->
+    
+    <!-- Fonts: Inter for UI -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Lucide Icons (Vanilla JS) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Icons: Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Chart.js for Analytics -->
+    
+    <!-- Analytics: Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Libraries -->
+    <!-- Styling: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- PDF Handling: PDF.js & jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- HTML Capture: html2canvas (Required for KaTeX Slides) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
-    <!-- MathJax (Fixed Config) -->
-    <script>
-      MathJax = {
-        tex: { 
-            inlineMath: [['$', '$'], ['\\(', '\\)']],
-            displayMath: [['$$', '$$'], ['\\[', '\\]']],
-            processEscapes: true
-        },
-        svg: { 
-            fontCache: 'none', // Vital for html2canvas
-            scale: 1,
-            minScale: 1
-        },
-        startup: {
-            typeset: false // We control rendering manually to prevent flickering
-        }
-      };
-    </script>
-    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <!-- Typesetting: KaTeX (Fast Math Rendering) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
+    <!-- Tailwind Config for Dark Mode & Colors -->
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -53,11 +49,16 @@
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
                     },
                     keyframes: {
                         fadeIn: {
-                            '0%': { opacity: '0', transform: 'translateY(-10px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
                         }
                     }
                 }
@@ -65,51 +66,16 @@
         }
     </script>
 
+    <!-- ==========================================
+         CUSTOM STYLES
+    =========================================== -->
     <style>
-        /* Base Styles */
+        /* Base Reset */
         body {
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
         }
         
-        /* --- MATHJAX ALIGNMENT FIXES (UPDATED) --- */
-        
-        /* Goal 1: Shared Typography Class for Preview & Render 
-           Ensures What You See Is What You Get
-        */
-        .question-text-preview,
-        .question-text-render {
-            font-family: 'Inter', sans-serif;
-            font-size: 16px;
-            line-height: 1.6;
-            color: #0f172a; /* Slate 900 */
-        }
-
-        /* Inline Math alignment tweak */
-        .question-text-preview mjx-container[jax="SVG"]:not([display="true"]),
-        .question-text-render mjx-container[jax="SVG"]:not([display="true"]) {
-            display: inline-block !important;
-            vertical-align: -0.08em !important; /* Tuned baseline for Inter */
-            margin: 0 1px !important;
-        }
-
-        /* Block Math styling */
-        .question-text-preview mjx-container[jax="SVG"][display="true"],
-        .question-text-render mjx-container[jax="SVG"][display="true"] {
-            display: block !important;
-            text-align: center !important;
-            margin: 1em 0 !important;
-            transform: none !important;
-        }
-
-        /* SVG internal display fix */
-        mjx-container[jax="SVG"] > svg {
-            display: inline-block !important;
-            vertical-align: inherit !important;
-        }
-        
-        /* --- END MATHJAX FIXES --- */
-
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -117,12 +83,15 @@
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* PDF & Canvas Layers */
+        /* PDF Canvas Container */
         #pdf-canvas-container {
             position: relative;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             margin: 0 auto;
+            display: inline-block;
         }
+        
+        /* Text Layer for PDF Selection */
         #text-layer {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             overflow: hidden; opacity: 0.2; line-height: 1.0;
@@ -132,87 +101,126 @@
             color: transparent; position: absolute; white-space: pre; cursor: text;
             transform-origin: 0% 0%;
         }
+        
+        /* Crop Selection Box */
         #crop-box {
             position: absolute;
             border: 2px solid #6366f1;
-            background-color: rgba(99, 102, 241, 0.1);
+            background-color: rgba(99, 102, 241, 0.15);
             box-sizing: border-box;
             pointer-events: none;
             display: none;
-            z-index: 10;
+            z-index: 50;
         }
 
-        /* Utilities */
+        /* Glassmorphism Panels */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
         .dark .glass-panel {
-            background: rgba(30, 41, 59, 0.8);
+            background: rgba(15, 23, 42, 0.9);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
         
+        /* Buttons */
         .btn-icon {
-            padding: 0.5rem; border-radius: 0.5rem; transition: background-color 0.2s;
+            padding: 0.5rem; border-radius: 0.5rem; transition: all 0.2s;
+            color: #64748b;
         }
-        .btn-icon:hover { background-color: #f1f5f9; }
-        .dark .btn-icon:hover { background-color: #334155; }
+        .btn-icon:hover { background-color: #f1f5f9; color: #0f172a; }
+        .dark .btn-icon:hover { background-color: #334155; color: #f8fafc; }
         
-        /* --- QUESTION GRID STATUS (Standard CSS Colors) --- */
-        .q-status-answered {
-            background-color: #22c55e !important;
-            border-color: #22c55e !important;
-            color: #ffffff !important;
-        }
-        .q-status-not-answered {
-            background-color: #ef4444 !important;
-            border-color: #ef4444 !important;
-            color: #ffffff !important;
-        }
-        .q-status-review {
-            background-color: #a855f7 !important;
-            border-color: #a855f7 !important;
-            color: #ffffff !important;
-        }
-        .q-status-not-visited {
-            background-color: #f1f5f9;
-            border-color: transparent;
-            color: #475569;
-        }
-        .dark .q-status-not-visited {
-            background-color: #334155;
-            color: #cbd5e1;
-        }
+        /* KaTeX Dark Mode Fixes */
+        .dark .katex { color: #e2e8f0; }
+        .katex-display { margin: 1em 0; overflow-x: auto; overflow-y: hidden; }
+
+        /* Question Status Grid Colors */
+        .q-status-answered { background-color: #22c55e !important; border-color: #22c55e !important; color: #ffffff !important; }
+        .q-status-not-answered { background-color: #ef4444 !important; border-color: #ef4444 !important; color: #ffffff !important; }
+        .q-status-review { background-color: #a855f7 !important; border-color: #a855f7 !important; color: #ffffff !important; }
+        .q-status-not-visited { background-color: #f1f5f9; border-color: transparent; color: #475569; }
+        .dark .q-status-not-visited { background-color: #1e293b; color: #94a3b8; }
+        
+        /* Current Question Indicator */
         .q-status-current {
             box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #6366f1 !important;
             z-index: 10;
+            transform: scale(1.1);
         }
         .dark .q-status-current {
             box-shadow: 0 0 0 2px #0f172a, 0 0 0 4px #6366f1 !important;
         }
+        
+        /* Loading Overlay */
+        #loading-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); 
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #fff; border-top-color: transparent;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Ghost Container for PDF Generation */
+        #ghost-render-container {
+            position: fixed;
+            top: -10000px;
+            left: -10000px;
+            width: 1200px; /* High Res Width for Capture */
+            background: white;
+            padding: 60px;
+            font-family: 'Inter', sans-serif;
+            visibility: visible; /* Must be visible to be captured, but offscreen */
+            z-index: 99999;
+        }
+        
+        /* Image Inversion for Dark Mode */
+        .dark .q-img-invert {
+            filter: invert(1) hue-rotate(180deg);
+        }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300 font-sans selection:bg-indigo-100 dark:selection:bg-indigo-900 selection:text-indigo-900 dark:selection:text-indigo-100">
+
+    <!-- Loading Overlay -->
+    <!-- Fixed: Added style="display: none" and flex classes to prevent it from sticking -->
+    <div id="loading-overlay" style="display: none;" class="hidden flex items-center justify-center">
+        <div class="flex flex-col items-center">
+            <div class="spinner mb-4"></div>
+            <p class="text-white font-medium text-lg animate-pulse" id="loading-text">Processing...</p>
+        </div>
+    </div>
 
     <!-- Navbar -->
-    <nav class="sticky top-0 z-40 glass-panel border-b border-slate-200 dark:border-slate-800 px-4 h-16 flex items-center justify-between">
+    <nav class="sticky top-0 z-40 glass-panel border-b border-slate-200 dark:border-slate-800 px-4 md:px-6 h-16 flex items-center justify-between shadow-sm">
         <div class="flex items-center gap-3">
-            <div class="bg-indigo-600 text-white p-1.5 rounded-lg">
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-2 rounded-lg shadow-lg shadow-indigo-500/20">
                 <i data-lucide="graduation-cap" class="w-6 h-6"></i>
             </div>
-            <h1 class="text-lg font-bold tracking-tight">CledBT</h1>
+            <div class="flex flex-col">
+                <h1 class="text-xl font-bold tracking-tight leading-none">CledBT</h1>
+                <p id="nav-test-info" class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider hidden md:block mt-0.5">Simulator Ready</p>
+            </div>
         </div>
 
-        <div class="flex items-center gap-2 md:gap-4">
-             <span id="test-timer" class="hidden font-mono text-xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">00:00:00</span>
+        <div class="flex items-center gap-3 md:gap-4">
+             <!-- Timer (Hidden in setup) -->
+             <div id="test-timer-container" class="hidden flex items-center gap-3 bg-slate-100 dark:bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                <i data-lucide="clock" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                <span id="test-timer" class="font-mono text-xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">00:00:00</span>
+             </div>
              
              <!-- Pause Button -->
-             <button id="pause-test-btn" class="hidden px-3 py-1.5 text-xs font-bold uppercase tracking-wider border-2 border-amber-500 text-amber-600 dark:text-amber-400 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
-                 Pause
+             <button id="pause-test-btn" class="hidden px-4 py-1.5 text-xs font-bold uppercase tracking-wider border-2 border-amber-500 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors flex items-center gap-2">
+                 <i data-lucide="pause-circle" class="w-4 h-4"></i> Pause
              </button>
 
-             <button id="theme-toggle" class="btn-icon" aria-label="Toggle Theme">
+             <!-- Theme Toggle -->
+             <button id="theme-toggle" class="btn-icon bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm" aria-label="Toggle Theme">
                 <i data-lucide="sun" id="theme-icon-light" class="w-5 h-5"></i>
                 <i data-lucide="moon" id="theme-icon-dark" class="w-5 h-5 hidden"></i>
              </button>
@@ -220,91 +228,124 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="flex-grow relative">
+    <main class="flex-grow relative w-full max-w-[1920px] mx-auto">
         
-        <!-- VIEW 1: Setup & Crop -->
-        <div id="setup-page" class="p-4 md:p-6 max-w-[1600px] mx-auto">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-100px)]">
+        <!-- ==========================================
+             VIEW 1: SETUP & QUESTION MANAGEMENT
+        =========================================== -->
+        <div id="setup-page" class="p-4 md:p-6 lg:p-8 animate-fade-in">
+            
+            <!-- Test Header -->
+            <div class="mb-6 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-500">
+                        <i data-lucide="file-text" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 id="display-title" class="text-2xl font-bold text-slate-800 dark:text-slate-100">Untitled Test</h2>
+                        <p id="display-desc" class="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl">No description added.</p>
+                    </div>
+                </div>
+                <div class="flex gap-3 w-full md:w-auto">
+                    <button id="settings-btn" class="flex-1 md:flex-none px-4 py-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all shadow-sm font-medium flex items-center justify-center gap-2">
+                        <i data-lucide="settings-2" class="w-4 h-4"></i> Settings
+                    </button>
+                    <button id="set-answer-key-btn" class="flex-1 md:flex-none px-4 py-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all shadow-sm font-medium flex items-center justify-center gap-2">
+                        <i data-lucide="key" class="w-4 h-4"></i> Answer Key
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-240px)] min-h-[600px]">
                 
-                <!-- LEFT: PDF Viewer -->
+                <!-- LEFT PANEL: PDF Viewer & Cropper -->
                 <div class="lg:col-span-8 xl:col-span-9 flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden relative">
                     
                     <!-- Toolbar -->
-                    <div class="h-14 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur">
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-medium text-slate-500 dark:text-slate-400">PDF Viewer</span>
+                    <div class="h-16 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur z-20">
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-2">
+                                <i data-lucide="file" class="w-4 h-4"></i> Source PDF
+                            </span>
                             <input type="file" id="pdf-upload" accept=".pdf" class="hidden">
-                            <label for="pdf-upload" class="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-md font-medium cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
-                                Upload PDF
+                            <label for="pdf-upload" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium cursor-pointer transition-colors shadow-sm shadow-indigo-500/30 flex items-center gap-2">
+                                <i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload File
                             </label>
                         </div>
 
-                        <!-- Pagination & Zoom -->
-                        <div id="pdf-controls" class="flex items-center gap-1 md:gap-2 hidden">
-                            <button id="prev-page" class="btn-icon"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-                            <span class="text-xs font-mono text-slate-500 w-16 text-center">
+                        <!-- PDF Controls -->
+                        <div id="pdf-controls" class="flex items-center gap-2 hidden bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <button id="prev-page" class="btn-icon w-8 h-8 flex items-center justify-center"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                            <span class="text-xs font-mono text-slate-500 w-20 text-center font-medium">
                                 <span id="page-num">0</span> / <span id="page-count">0</span>
                             </span>
-                            <button id="next-page" class="btn-icon"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
-                            <div class="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-2"></div>
-                            <button id="zoom-out-btn" class="btn-icon"><i data-lucide="minus" class="w-4 h-4"></i></button>
-                            <span id="zoom-level" class="text-xs font-mono w-12 text-center">100%</span>
-                            <button id="zoom-in-btn" class="btn-icon"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                            <button id="next-page" class="btn-icon w-8 h-8 flex items-center justify-center"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                            <div class="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1"></div>
+                            <button id="zoom-out-btn" class="btn-icon w-8 h-8 flex items-center justify-center"><i data-lucide="minus" class="w-4 h-4"></i></button>
+                            <span id="zoom-level" class="text-xs font-mono w-12 text-center font-medium">100%</span>
+                            <button id="zoom-in-btn" class="btn-icon w-8 h-8 flex items-center justify-center"><i data-lucide="plus" class="w-4 h-4"></i></button>
                         </div>
                     </div>
 
-                    <!-- Viewer Area -->
-                    <div class="flex-grow overflow-auto relative bg-slate-100 dark:bg-slate-950 p-4 text-center" id="pdf-scroll-container">
+                    <!-- Viewer Canvas -->
+                    <div class="flex-grow overflow-auto relative bg-slate-100 dark:bg-slate-950 p-8 text-center" id="pdf-scroll-container">
                         <div id="empty-state" class="flex flex-col items-center justify-center h-full text-slate-400">
-                            <i data-lucide="file-up" class="w-16 h-16 mb-4 opacity-50"></i>
-                            <p class="text-sm">Upload a PDF to start cropping questions</p>
+                            <div class="w-20 h-20 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                                <i data-lucide="file-up" class="w-10 h-10 opacity-50"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-slate-600 dark:text-slate-300">No PDF Uploaded</h3>
+                            <p class="text-sm">Upload a document to start cropping questions</p>
                         </div>
                         
-                        <div id="pdf-viewer" class="hidden shadow-xl relative inline-block text-left">
+                        <div id="pdf-viewer" class="hidden shadow-2xl relative inline-block text-left ring-1 ring-black/5 dark:ring-white/10 rounded-sm">
                             <div id="pdf-canvas-container">
                                 <canvas id="pdf-canvas" class="block"></canvas>
+                                <!-- Text Selection Layer -->
                                 <div id="text-layer"></div>
+                                <!-- Crop Overlay -->
                                 <div id="crop-box"></div>
                             </div>
                         </div>
                     </div>
                     
-                    <div id="crop-hint" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/80 text-white text-xs px-4 py-2 rounded-full backdrop-blur hidden pointer-events-none">
-                        Drag to crop a question
+                    <div id="crop-hint" class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-xs font-medium px-4 py-2 rounded-full backdrop-blur hidden pointer-events-none shadow-lg z-30 flex items-center gap-2">
+                        <i data-lucide="crop" class="w-3 h-3"></i> Drag mouse to crop a question area
                     </div>
                 </div>
 
-                <!-- RIGHT: Tools & Question List -->
+                <!-- RIGHT PANEL: Tools & Question Bank -->
                 <div class="lg:col-span-4 xl:col-span-3 flex flex-col gap-4 h-full overflow-hidden">
                     
-                    <!-- Action Card -->
-                    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 flex-shrink-0">
+                    <!-- Question Creator Card -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 flex-shrink-0">
                         <div class="flex justify-between items-center mb-4">
-                            <h2 class="font-semibold text-slate-800 dark:text-slate-200">Add Questions</h2>
-                            <button id="manual-add-btn" class="text-xs text-indigo-600 hover:underline">Manual Entry</button>
+                            <h2 class="font-bold text-slate-800 dark:text-slate-200 text-sm uppercase tracking-wide">Add Content</h2>
+                            <button id="manual-add-btn" class="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors font-medium flex items-center gap-1.5">
+                                <i data-lucide="pen-tool" class="w-3 h-3"></i> Manual Entry
+                            </button>
                         </div>
 
-                        <!-- Active Crop Area -->
-                        <div id="question-setup-form" class="hidden animate-fade-in">
+                        <!-- Active Crop Form -->
+                        <div id="question-setup-form" class="hidden animate-slide-up">
                             <div class="mb-3">
-                                <p class="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wider">Selected Area</p>
-                                <div id="crop-preview-container" class="flex gap-2 overflow-x-auto pb-2 min-h-[60px] border border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-2 bg-slate-50 dark:bg-slate-950/50">
-                                    <!-- Crop thumbs go here -->
+                                <p class="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Crop Preview</p>
+                                <div id="crop-preview-container" class="flex gap-2 overflow-x-auto pb-2 min-h-[80px] border border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-2 bg-slate-50 dark:bg-slate-950/50">
+                                    <!-- Dynamic Crops -->
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-3 mb-3">
-                                <div class="space-y-1">
-                                    <label class="text-xs font-medium text-slate-500">Subject</label>
-                                    <select id="q-subject" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <div class="space-y-1.5">
+                                    <label class="text-xs font-bold text-slate-500">Subject</label>
+                                    <select id="q-subject" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow">
                                         <option>Physics</option>
                                         <option>Chemistry</option>
                                         <option>Math</option>
                                     </select>
                                 </div>
-                                <div class="space-y-1">
-                                    <label class="text-xs font-medium text-slate-500">Type</label>
-                                    <select id="q-type" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <div class="space-y-1.5">
+                                    <label class="text-xs font-bold text-slate-500">Type</label>
+                                    <select id="q-type" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow">
                                         <option value="SingleCorrect">Single Correct</option>
                                         <option value="MultipleCorrect">Multi Correct</option>
                                         <option value="Numerical">Numerical</option>
@@ -313,46 +354,53 @@
                             </div>
 
                             <div class="flex gap-2">
-                                <button id="add-question-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 rounded-lg transition-colors">
+                                <button id="add-question-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2.5 rounded-lg transition-all shadow-md shadow-indigo-500/20">
                                     Add Question
                                 </button>
-                                <button id="cancel-crop-btn" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
-                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                <button id="cancel-crop-btn" class="px-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                                    <i data-lucide="x" class="w-5 h-5"></i>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Placeholder when no crop -->
-                        <div id="setup-placeholder" class="text-center py-6 text-slate-400 text-sm border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                            Select an area on the PDF
+                        <!-- Empty State -->
+                        <div id="setup-placeholder" class="text-center py-8 px-4 text-slate-400 text-xs border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
+                            <i data-lucide="crop" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                            Select an area on the PDF or click "Manual Entry" to create a question.
                         </div>
                     </div>
 
                     <!-- Question Bank List -->
                     <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col flex-grow overflow-hidden">
-                        <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                            <h3 class="font-semibold text-sm">Question Bank</h3>
-                            <span id="question-count-display" class="bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                        <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950/30">
+                            <h3 class="font-bold text-sm text-slate-700 dark:text-slate-200">Question Bank</h3>
+                            <span id="question-count-display" class="bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs px-2.5 py-0.5 rounded-full font-bold">0</span>
                         </div>
                         
-                        <div id="question-list" class="flex-grow overflow-y-auto p-2 space-y-2">
-                            <!-- Questions injected here -->
+                        <div id="question-list" class="flex-grow overflow-y-auto p-3 space-y-2">
+                            <!-- Items injected via JS -->
                         </div>
                         
                         <!-- Bottom Actions -->
-                        <div class="p-4 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-200 dark:border-slate-800 space-y-2">
-                            <button id="start-test-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg shadow-sm transition-all">
-                                Start Test
+                        <div class="p-4 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                            <button id="start-test-btn" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-500/20 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                                <i data-lucide="play" class="w-4 h-4 fill-current"></i> Start Test Simulator
                             </button>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button id="settings-btn" class="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Settings</button>
-                                <button id="set-answer-key-btn" class="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Answer Key</button>
-                            </div>
-                            <div class="flex justify-between pt-2">
-                                <button id="download-pdf-btn" class="text-xs text-slate-500 hover:text-indigo-600 flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> PDF</button>
-                                <button id="export-json-btn" class="text-xs text-slate-500 hover:text-indigo-600 flex items-center gap-1"><i data-lucide="save" class="w-3 h-3"></i> Save</button>
-                                <label for="import-json-input" class="text-xs text-slate-500 hover:text-indigo-600 flex items-center gap-1 cursor-pointer"><i data-lucide="upload" class="w-3 h-3"></i> Load</label>
-                                <input type="file" id="import-json-input" class="hidden" accept=".json">
+                            
+                            <div class="grid grid-cols-3 gap-2">
+                                <button id="download-slides-btn" class="flex flex-col items-center justify-center gap-1 p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group">
+                                    <i data-lucide="monitor" class="w-4 h-4 text-slate-400 group-hover:text-indigo-500"></i>
+                                    <span class="text-[10px] font-medium text-slate-500 group-hover:text-indigo-600">Slides PDF</span>
+                                </button>
+                                <button id="export-json-btn" class="flex flex-col items-center justify-center gap-1 p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group">
+                                    <i data-lucide="save" class="w-4 h-4 text-slate-400 group-hover:text-indigo-500"></i>
+                                    <span class="text-[10px] font-medium text-slate-500 group-hover:text-indigo-600">Save Data</span>
+                                </button>
+                                <label for="import-json-input" class="cursor-pointer flex flex-col items-center justify-center gap-1 p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group">
+                                    <i data-lucide="upload" class="w-4 h-4 text-slate-400 group-hover:text-indigo-500"></i>
+                                    <span class="text-[10px] font-medium text-slate-500 group-hover:text-indigo-600">Load Data</span>
+                                    <input type="file" id="import-json-input" class="hidden" accept=".json">
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -361,280 +409,441 @@
             </div>
         </div>
 
-        <!-- VIEW 2: Test Interface -->
-        <div id="test-page" class="hidden p-4 md:p-6 max-w-7xl mx-auto lg:h-[calc(100vh-80px)] h-auto min-h-screen relative pb-28 lg:pb-6">
+        <!-- ==========================================
+             VIEW 2: TEST INTERFACE
+        =========================================== -->
+        <div id="test-page" class="hidden p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto min-h-screen pb-24 lg:pb-8 relative animate-fade-in">
             
-            <!-- Pause Overlay -->
-            <div id="pause-overlay" class="hidden absolute inset-0 z-[60] bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl">
-                <div class="p-8 text-center max-w-md">
-                    <div class="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <i data-lucide="pause" class="w-8 h-8"></i>
+            <!-- Full Screen Pause Overlay -->
+            <div id="pause-overlay" class="hidden fixed inset-0 z-[100] bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center">
+                <div class="p-8 text-center max-w-md animate-slide-up">
+                    <div class="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-amber-500/10">
+                        <i data-lucide="pause" class="w-10 h-10 fill-current"></i>
                     </div>
-                    <h2 class="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">Test Paused</h2>
-                    <p class="text-slate-500 dark:text-slate-400 mb-8">The timer is stopped. Click resume when you are ready to continue.</p>
-                    <button onclick="togglePause()" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all">
-                        Resume Test
+                    <h2 class="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-3">Test Paused</h2>
+                    <p class="text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">The timer is stopped. Take a break and click resume when you are ready to continue your session.</p>
+                    <button onclick="togglePause()" class="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center gap-2 mx-auto">
+                        <i data-lucide="play" class="w-5 h-5 fill-current"></i> Resume Test
                     </button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
                 
-                <!-- Question Area -->
-                <div class="lg:col-span-8 xl:col-span-9 flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden lg:h-full h-auto">
-                    <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
-                        <span id="q-number-subject" class="font-semibold text-slate-700 dark:text-slate-200">Question 1</span>
-                        <span id="q-type-badge" class="text-xs font-mono bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded text-slate-600 dark:text-slate-400">SCQ</span>
+                <!-- Main Question Area -->
+                <div class="lg:col-span-8 xl:col-span-9 flex flex-col bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden lg:h-full h-auto relative">
+                    <!-- Header -->
+                    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur">
+                        <div class="flex items-center gap-3">
+                            <span id="q-number-subject" class="font-bold text-lg text-slate-800 dark:text-slate-100">Question 1</span>
+                            <div class="h-4 w-px bg-slate-300 dark:bg-slate-700"></div>
+                            <span id="q-type-badge" class="text-xs font-bold font-mono bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-md">SCQ</span>
+                        </div>
+                        <div class="text-xs text-slate-400 flex items-center gap-1">
+                            <i data-lucide="clock" class="w-3 h-3"></i> Time spent: <span id="q-time-spent" class="font-mono">0s</span>
+                        </div>
                     </div>
                     
-                    <div class="flex-grow overflow-y-auto p-6 flex flex-col items-center min-h-[300px]">
-                        <img id="q-image" src="" alt="Question" class="max-w-full h-auto rounded-lg shadow-sm border border-slate-100 dark:border-slate-800 mb-8">
+                    <!-- Scrollable Content -->
+                    <div class="flex-grow overflow-y-auto p-6 md:p-8 flex flex-col min-h-[400px]">
                         
-                        <!-- Options -->
-                        <div class="w-full max-w-2xl">
+                        <!-- Question Content Render -->
+                        <div id="q-content-area" class="mb-10 w-full animate-fade-in">
+                            <!-- Populated dynamically -->
+                        </div>
+                        
+                        <!-- Options Area -->
+                        <div class="w-full max-w-4xl mx-auto mt-auto">
                             <div id="q-options-area" class="space-y-3"></div>
+                            
+                            <!-- Numerical Input -->
                             <div id="q-numerical-area" class="hidden">
-                                <label class="block text-sm font-medium mb-2">Your Answer</label>
-                                <input type="number" step="any" id="q-numerical-input" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Enter numerical value...">
+                                <label class="block text-sm font-bold text-slate-500 mb-2 uppercase tracking-wide">Your Answer</label>
+                                <div class="relative max-w-xs">
+                                    <input type="number" step="any" id="q-numerical-input" class="w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-lg font-mono font-medium transition-all" placeholder="Enter value...">
+                                    <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">NUM</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Sticky Footer on Mobile, Static on Desktop -->
-                    <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 lg:bg-slate-50 dark:lg:bg-slate-950 flex justify-between lg:static fixed bottom-0 left-0 right-0 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] lg:shadow-none">
-                        <button id="clear-response-btn" class="px-4 py-2 text-sm text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">Clear</button>
+                    <!-- Footer Controls -->
+                    <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 lg:bg-slate-50 dark:lg:bg-slate-950 flex justify-between items-center lg:static fixed bottom-0 left-0 right-0 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] lg:shadow-none">
+                        <button id="clear-response-btn" class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors flex items-center gap-2">
+                            <i data-lucide="eraser" class="w-4 h-4"></i> Clear
+                        </button>
                         <div class="flex gap-3">
-                            <button id="mark-review-btn" class="px-4 py-2 text-sm border border-purple-200 dark:border-purple-900 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors whitespace-nowrap">Review</button>
-                            <button id="save-next-btn" class="px-6 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap">Save & Next</button>
+                            <button id="mark-review-btn" class="px-5 py-2.5 text-sm font-bold border border-purple-200 dark:border-purple-900 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-colors flex items-center gap-2">
+                                <i data-lucide="bookmark" class="w-4 h-4"></i> Review
+                            </button>
+                            <button id="save-next-btn" class="px-6 py-2.5 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all shadow-md shadow-indigo-500/20 flex items-center gap-2">
+                                Save & Next <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sidebar: Navigator -->
-                <div class="lg:col-span-4 xl:col-span-3 flex flex-col gap-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden lg:h-full h-auto">
-                    <div class="p-4 border-b border-slate-200 dark:border-slate-800">
-                        <h3 class="font-semibold text-sm">Question Palette</h3>
+                <!-- Right Sidebar: Navigator -->
+                <div class="lg:col-span-4 xl:col-span-3 flex flex-col gap-4 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden lg:h-full h-auto">
+                    <div class="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                        <h3 class="font-bold text-sm uppercase tracking-wide text-slate-500">Question Palette</h3>
                     </div>
                     
-                    <div class="p-4 flex-grow lg:overflow-y-auto">
-                        <!-- Mobile: 7 cols, Desktop: 5 cols -->
-                        <div id="q-nav-panel" class="grid grid-cols-7 lg:grid-cols-5 gap-2 content-start">
-                            <!-- Navigation Buttons -->
+                    <div class="p-5 flex-grow lg:overflow-y-auto">
+                        <div id="q-nav-panel" class="grid grid-cols-7 lg:grid-cols-5 gap-2.5 content-start">
+                            <!-- Navigation Buttons Injected Here -->
                         </div>
                     </div>
 
-                    <div class="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
-                         <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-500 mb-4">
-                            <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span> Answered</div>
-                            <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Skipped</div>
-                            <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-500"></span> Review</div>
-                            <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600"></span> Unseen</div>
+                    <div class="p-5 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
+                         <!-- Legend -->
+                         <div class="grid grid-cols-2 gap-y-2 gap-x-4 text-[11px] font-medium text-slate-500 mb-5">
+                            <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-green-500"></span> Answered</div>
+                            <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Not Answered</div>
+                            <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Review</div>
+                            <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-700"></span> Not Visited</div>
                          </div>
-                         <button id="submit-test-btn" class="w-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 py-2.5 rounded-lg font-medium text-sm transition-colors">
-                            Submit Test
+                         <button id="submit-test-btn" class="w-full bg-white dark:bg-slate-900 border-2 border-red-100 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 group">
+                            <i data-lucide="check-circle" class="w-4 h-4 group-hover:scale-110 transition-transform"></i> Submit Test
                          </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- VIEW 3: Results -->
-        <div id="result-page" class="hidden p-4 md:p-8 max-w-5xl mx-auto">
-            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <div class="bg-indigo-600 p-8 text-center text-white relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-                    <h2 class="text-2xl font-bold relative z-10 mb-2">Test Summary</h2>
-                    <div class="text-6xl font-bold relative z-10 tracking-tighter" id="total-score">0</div>
-                    <p class="text-indigo-200 relative z-10">Total Score</p>
+        <!-- ==========================================
+             VIEW 3: RESULTS & ANALYTICS
+        =========================================== -->
+        <div id="result-page" class="hidden p-4 md:p-8 max-w-6xl mx-auto animate-fade-in">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                
+                <!-- Hero Banner -->
+                <div class="bg-gradient-to-r from-indigo-600 to-purple-700 p-10 text-center text-white relative overflow-hidden">
+                    <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+                    <div class="relative z-10">
+                        <h2 class="text-3xl font-bold mb-2">Test Summary</h2>
+                        <div class="text-7xl font-extrabold tracking-tighter my-4 drop-shadow-lg" id="total-score">0</div>
+                        <div class="inline-block bg-white/20 px-4 py-1 rounded-full text-sm font-medium backdrop-blur-sm border border-white/20">Total Score</div>
+                    </div>
                 </div>
 
+                <!-- Key Stats Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-800 border-b border-slate-200 dark:border-slate-800">
-                    <div class="p-6 text-center">
-                        <div class="text-3xl font-bold text-green-500 mb-1" id="correct-count">0</div>
-                        <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">Correct</div>
+                    <div class="p-8 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div class="text-4xl font-bold text-green-500 mb-2" id="correct-count">0</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Correct</div>
                     </div>
-                    <div class="p-6 text-center">
-                        <div class="text-3xl font-bold text-red-500 mb-1" id="incorrect-count">0</div>
-                        <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">Incorrect</div>
+                    <div class="p-8 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div class="text-4xl font-bold text-red-500 mb-2" id="incorrect-count">0</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Incorrect</div>
                     </div>
-                    <div class="p-6 text-center">
-                        <div class="text-3xl font-bold text-slate-400 mb-1" id="unattempted-count">0</div>
-                        <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">Unattempted</div>
+                    <div class="p-8 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div class="text-4xl font-bold text-slate-400 mb-2" id="unattempted-count">0</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Unattempted</div>
                     </div>
                 </div>
 
-                <div class="p-8">
-                    <!-- Time Analysis -->
-                    <div class="mb-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-                        <h4 class="text-sm font-bold uppercase text-slate-500 mb-3 tracking-wide">Time Analysis (Avg / Question)</h4>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                            <div><div class="text-xl font-bold text-slate-700 dark:text-slate-200" id="avg-time-overall">0s</div><div class="text-xs text-slate-400">Overall</div></div>
-                            <div><div class="text-xl font-bold text-slate-700 dark:text-slate-200" id="avg-time-phy">0s</div><div class="text-xs text-slate-400">Physics</div></div>
-                            <div><div class="text-xl font-bold text-slate-700 dark:text-slate-200" id="avg-time-chem">0s</div><div class="text-xs text-slate-400">Chemistry</div></div>
-                            <div><div class="text-xl font-bold text-slate-700 dark:text-slate-200" id="avg-time-math">0s</div><div class="text-xs text-slate-400">Math</div></div>
+                <div class="p-8 md:p-10">
+                    <!-- Time Analysis Box -->
+                    <div class="mb-10 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center gap-2 mb-4">
+                            <i data-lucide="timer" class="w-5 h-5 text-indigo-500"></i>
+                            <h4 class="text-sm font-bold uppercase text-slate-500 tracking-wide">Time Analysis (Avg / Question)</h4>
                         </div>
-                    </div>
-
-                    <h3 class="text-lg font-semibold mb-4">Subject Analysis</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                         <div id="physics-results" class="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700"></div>
-                         <div id="chemistry-results" class="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700"></div>
-                         <div id="math-results" class="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700"></div>
-                    </div>
-
-                    <!-- Charts Section -->
-                    <div id="analytics-charts" class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                            <h4 class="text-xs font-bold uppercase text-slate-500 mb-4 text-center">Performance Distribution</h4>
-                            <div class="h-64"><canvas id="chart-distribution"></canvas></div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                                <div class="text-2xl font-bold text-slate-800 dark:text-slate-100" id="avg-time-overall">0s</div>
+                                <div class="text-xs text-slate-400 font-medium mt-1">Overall</div>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                                <div class="text-2xl font-bold text-slate-800 dark:text-slate-100" id="avg-time-phy">0s</div>
+                                <div class="text-xs text-slate-400 font-medium mt-1">Physics</div>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                                <div class="text-2xl font-bold text-slate-800 dark:text-slate-100" id="avg-time-chem">0s</div>
+                                <div class="text-xs text-slate-400 font-medium mt-1">Chemistry</div>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                                <div class="text-2xl font-bold text-slate-800 dark:text-slate-100" id="avg-time-math">0s</div>
+                                <div class="text-xs text-slate-400 font-medium mt-1">Math</div>
+                            </div>
                         </div>
-                        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                            <h4 class="text-xs font-bold uppercase text-slate-500 mb-4 text-center">Subject-wise Accuracy</h4>
-                            <div class="h-64"><canvas id="chart-subjects"></canvas></div>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-wrap justify-center gap-3">
-                        <button id="review-answers-btn" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow-sm transition-colors">Detailed Review</button>
-                        <button id="download-result-btn" class="px-6 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Download Detailed Report</button>
-                        <button id="back-to-home-btn" class="px-6 py-2.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium">Exit to Home</button>
                     </div>
                     
-                    <!-- Review Filters -->
-                    <div id="review-controls" class="hidden mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
-                        <div class="flex justify-center gap-2 mb-6">
-                            <button data-filter="all" class="review-filter-btn px-4 py-1.5 rounded-full text-sm font-medium bg-indigo-600 text-white shadow-sm">All</button>
-                            <button data-filter="correct" class="review-filter-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Correct</button>
-                            <button data-filter="incorrect" class="review-filter-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Incorrect</button>
+                    <!-- Subject Analysis & Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+                        <!-- Breakdown -->
+                        <div class="lg:col-span-1 space-y-4">
+                             <h3 class="font-bold text-lg mb-2">Subject Breakdown</h3>
+                             <div id="physics-results" class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm"></div>
+                             <div id="chemistry-results" class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm"></div>
+                             <div id="math-results" class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm"></div>
                         </div>
-                        <div id="review-section" class="space-y-6"></div>
+                        
+                        <!-- Charts -->
+                        <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
+                                <h4 class="text-xs font-bold uppercase text-slate-500 mb-4 text-center">Performance Distribution</h4>
+                                <div class="flex-grow min-h-[200px]"><canvas id="chart-distribution"></canvas></div>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
+                                <h4 class="text-xs font-bold uppercase text-slate-500 mb-4 text-center">Subject-wise Accuracy</h4>
+                                <div class="flex-grow min-h-[200px]"><canvas id="chart-subjects"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer Actions -->
+                    <div class="flex flex-wrap justify-center gap-4 py-4">
+                        <button id="review-answers-btn" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all">Detailed Review</button>
+                        <button id="download-result-btn" class="px-8 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Download Detailed Report</button>
+                        <button id="back-to-home-btn" class="px-8 py-3 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-bold transition-colors">Back to Dashboard</button>
+                    </div>
+                    
+                    <!-- Review Section (Hidden by default) -->
+                    <div id="review-controls" class="hidden mt-12 pt-10 border-t border-slate-200 dark:border-slate-800 animate-fade-in">
+                        <div class="flex justify-center gap-3 mb-8">
+                            <button data-filter="all" class="review-filter-btn px-6 py-2 rounded-full text-sm font-bold bg-indigo-600 text-white shadow-md transition-all">All Questions</button>
+                            <button data-filter="correct" class="review-filter-btn px-6 py-2 rounded-full text-sm font-bold bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-all">Correct</button>
+                            <button data-filter="incorrect" class="review-filter-btn px-6 py-2 rounded-full text-sm font-bold bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-all">Incorrect</button>
+                        </div>
+                        <div id="review-section" class="space-y-6 max-w-4xl mx-auto"></div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Modals -->
-    <!-- Manual Add Modal (Updated for Edit Mode) -->
-    <div id="manual-add-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
-            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                <h3 class="font-bold text-lg">Question Editor</h3>
-                <button id="manual-cancel-btn" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <!-- ==========================================
+         MODALS
+    =========================================== -->
+
+    <!-- Manual Add Question (KaTeX) -->
+    <div id="manual-add-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
+            <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
+                <div>
+                    <h3 class="font-bold text-lg flex items-center gap-2">
+                        <i data-lucide="pen-tool" class="w-5 h-5 text-indigo-500"></i> Question Editor 
+                    </h3>
+                    <p class="text-xs text-slate-500">Supports <span class="font-mono bg-indigo-50 text-indigo-600 px-1 rounded">LaTeX</span> math syntax (e.g. $x^2$)</p>
+                </div>
+                <button id="manual-cancel-btn" class="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
-            <div class="p-4 overflow-y-auto flex-grow space-y-4">
-                <!-- Wrapper for text/preview to easily hide for Crop edits -->
-                <div id="manual-q-text-group">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium mb-1">Question Text (LaTeX supported)</label>
-                        <textarea id="manual-q-text" rows="4" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm" placeholder="e.g., Find $x$ if $$\int_0^1 x^2 dx = ?$$"></textarea>
-                    </div>
+            
+            <div class="flex-grow grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
+                <!-- Editor Side -->
+                <div class="p-6 overflow-y-auto border-r border-slate-200 dark:border-slate-800 space-y-6 bg-white dark:bg-slate-900">
                     <div>
-                        <label class="block text-sm font-medium mb-1">Preview</label>
-                        <!-- Added question-text-preview class here -->
-                        <div id="manual-q-preview" class="question-text-preview p-4 border border-slate-200 dark:border-slate-700 rounded-xl min-h-[4rem] bg-white dark:bg-slate-950"></div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Question Text</label>
+                        <textarea id="manual-q-text" rows="6" class="w-full p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm leading-relaxed resize-none" placeholder="Type here... Use $x$ for inline math and $$x$$ for block math."></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Subject</label>
+                            <select id="manual-q-subject" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium outline-none focus:border-indigo-500">
+                                <option>Physics</option><option>Chemistry</option><option>Math</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Type</label>
+                            <select id="manual-q-type" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium outline-none focus:border-indigo-500">
+                                <option value="SingleCorrect">Single Correct</option>
+                                <option value="MultipleCorrect">Multiple Correct</option>
+                                <option value="Numerical">Numerical</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="manual-options-container" class="space-y-4 pt-2">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-bold uppercase text-slate-500">Options</label>
+                            <span class="text-[10px] text-slate-400">Supports Math</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex gap-3 items-center group">
+                                <span class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-500 text-sm group-focus-within:bg-indigo-100 group-focus-within:text-indigo-600 transition-colors">A</span>
+                                <input type="text" id="opt-a" class="flex-grow p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-mono focus:border-indigo-500 outline-none" placeholder="Option A text">
+                            </div>
+                            <div class="flex gap-3 items-center group">
+                                <span class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-500 text-sm group-focus-within:bg-indigo-100 group-focus-within:text-indigo-600 transition-colors">B</span>
+                                <input type="text" id="opt-b" class="flex-grow p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-mono focus:border-indigo-500 outline-none" placeholder="Option B text">
+                            </div>
+                            <div class="flex gap-3 items-center group">
+                                <span class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-500 text-sm group-focus-within:bg-indigo-100 group-focus-within:text-indigo-600 transition-colors">C</span>
+                                <input type="text" id="opt-c" class="flex-grow p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-mono focus:border-indigo-500 outline-none" placeholder="Option C text">
+                            </div>
+                            <div class="flex gap-3 items-center group">
+                                <span class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-500 text-sm group-focus-within:bg-indigo-100 group-focus-within:text-indigo-600 transition-colors">D</span>
+                                <input type="text" id="opt-d" class="flex-grow p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-mono focus:border-indigo-500 outline-none" placeholder="Option D text">
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Subject</label>
-                        <select id="manual-q-subject" class="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"><option>Physics</option><option>Chemistry</option><option>Math</option></select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Type</label>
-                        <select id="manual-q-type" class="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"><option value="SingleCorrect">Single Correct</option><option value="MultipleCorrect">Multiple Correct</option><option value="Numerical">Numerical</option></select>
+
+                <!-- Preview Side -->
+                <div class="p-6 overflow-y-auto bg-slate-50 dark:bg-slate-950/50 flex flex-col">
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-4 flex items-center gap-2">
+                        <i data-lucide="eye" class="w-3 h-3"></i> Live Render Preview
+                    </label>
+                    <div id="manual-preview-card" class="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex-grow">
+                        <div id="preview-q-text" class="text-lg text-slate-800 dark:text-slate-100 mb-8 leading-relaxed font-medium"></div>
+                        <div id="preview-options" class="space-y-3"></div>
                     </div>
                 </div>
             </div>
-            <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-                <button id="manual-save-btn" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">Save Question</button>
+            
+            <div class="p-5 border-t border-slate-200 dark:border-slate-800 flex justify-end bg-white dark:bg-slate-900 gap-3">
+                <button id="manual-save-btn" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 transform active:scale-95">
+                    Save Question
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Metadata Modal -->
+    <div id="edit-metadata-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm border border-slate-200 dark:border-slate-800 p-6">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i data-lucide="edit-3" class="w-5 h-5 text-indigo-500"></i> Edit Question Info</h3>
+            <p class="text-xs text-slate-500 mb-6">Change the classification of this question.</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Subject</label>
+                    <select id="edit-meta-subject" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option>Physics</option><option>Chemistry</option><option>Math</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Type</label>
+                    <select id="edit-meta-type" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="SingleCorrect">Single Correct</option><option value="MultipleCorrect">Multiple Correct</option><option value="Numerical">Numerical</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button id="edit-meta-cancel" class="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg font-medium text-sm">Cancel</button>
+                    <button id="edit-meta-save" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm shadow-md">Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resume Modal -->
+    <div id="resume-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-700 text-center">
+            <div class="mx-auto w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                <i data-lucide="history" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">Resume Session?</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-8">We found an unfinished test session. Would you like to pick up exactly where you left off?</p>
+            <div class="grid grid-cols-2 gap-3">
+                <button id="discard-session-btn" class="px-4 py-3 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 transition-colors">Discard</button>
+                <button id="resume-session-btn" class="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg transition-transform hover:scale-105">Resume</button>
             </div>
         </div>
     </div>
 
     <!-- Answer Key Modal -->
-    <div id="answer-key-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+    <div id="answer-key-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
         <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
-            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                <h3 class="font-bold text-lg">Answer Key</h3>
-                <button id="answer-key-cancel-btn" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
+                <h3 class="font-bold text-lg">Answer Key Configuration</h3>
+                <button id="answer-key-cancel-btn" class="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-200 rounded"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div id="answer-key-list" class="p-4 overflow-y-auto flex-grow space-y-3 bg-slate-50 dark:bg-slate-950/50">
-                <!-- Key items -->
-            </div>
-            <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-                <button id="answer-key-save-btn" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">Save Keys</button>
+            <div id="answer-key-list" class="p-5 overflow-y-auto flex-grow space-y-3 bg-slate-50 dark:bg-slate-950/50"></div>
+            <div class="p-5 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                <button id="answer-key-save-btn" class="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors shadow-md">Save Keys</button>
             </div>
         </div>
     </div>
 
     <!-- Settings Modal -->
-    <div id="settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
-             <div class="p-4 border-b border-slate-200 dark:border-slate-800">
-                <h3 class="font-bold text-lg">Test Settings</h3>
-            </div>
-            <div class="p-6 space-y-4 flex-grow overflow-y-auto">
+    <div id="settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
+             <div class="p-6 border-b border-slate-200 dark:border-slate-800"><h3 class="font-bold text-lg">Test Configuration</h3></div>
+            <div class="p-6 space-y-5 flex-grow overflow-y-auto">
                 <div>
-                    <label class="block text-sm font-medium mb-1">Duration (mins)</label>
-                    <input type="number" id="test-duration" class="w-full p-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent">
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Test Title</label>
+                    <input type="text" id="set-title" class="w-full p-3 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium">
                 </div>
-                <div class="space-y-3">
-                    <h4 class="text-xs font-bold uppercase text-slate-500 tracking-wider">Marking Scheme (+/-)</h4>
-                    <div class="grid grid-cols-3 gap-2 text-center text-sm">
-                        <span>Type</span><span>Correct</span><span>Incorrect</span>
-                        <span class="text-left">SCQ</span><input id="scq-correct" class="w-full p-1 border rounded bg-transparent text-center"><input id="scq-incorrect" class="w-full p-1 border rounded bg-transparent text-center">
-                        <span class="text-left">MCQ</span><input id="mcq-correct" class="w-full p-1 border rounded bg-transparent text-center"><input id="mcq-incorrect" class="w-full p-1 border rounded bg-transparent text-center">
-                        <span class="text-left">Num</span><input id="num-correct" class="w-full p-1 border rounded bg-transparent text-center"><input id="num-incorrect" class="w-full p-1 border rounded bg-transparent text-center">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Description</label>
+                    <textarea id="set-desc" rows="3" class="w-full p-3 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Duration (mins)</label>
+                    <input type="number" id="test-duration" class="w-full p-3 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium">
+                </div>
+                <div class="pt-2">
+                    <h4 class="text-xs font-bold uppercase text-slate-500 tracking-wider mb-3">Marking Scheme (+/-)</h4>
+                    <div class="grid grid-cols-3 gap-3 text-center text-sm font-medium">
+                        <span class="text-slate-400">Type</span><span class="text-green-600">Correct</span><span class="text-red-500">Incorrect</span>
+                        <span class="text-left text-slate-600 dark:text-slate-300 py-2">SCQ</span>
+                        <input id="scq-correct" class="w-full p-2 border rounded bg-transparent text-center">
+                        <input id="scq-incorrect" class="w-full p-2 border rounded bg-transparent text-center">
+                        
+                        <span class="text-left text-slate-600 dark:text-slate-300 py-2">MCQ</span>
+                        <input id="mcq-correct" class="w-full p-2 border rounded bg-transparent text-center">
+                        <input id="mcq-incorrect" class="w-full p-2 border rounded bg-transparent text-center">
+                        
+                        <span class="text-left text-slate-600 dark:text-slate-300 py-2">Num</span>
+                        <input id="num-correct" class="w-full p-2 border rounded bg-transparent text-center">
+                        <input id="num-incorrect" class="w-full p-2 border rounded bg-transparent text-center">
                     </div>
                 </div>
                 
-                <div class="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
-                    <h4 class="text-xs font-bold uppercase text-red-500 tracking-wider mb-2">Danger Zone</h4>
-                    <button id="clear-data-btn" class="w-full px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg text-sm font-medium transition-colors">
-                        Clear All Saved Data
+                <div class="mt-4 border-t border-slate-200 dark:border-slate-700 pt-6">
+                    <button id="clear-data-btn" class="w-full px-4 py-3 bg-red-50 hover:bg-red-100 dark:bg-red-900/10 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl text-sm font-bold transition-colors">
+                        ⚠ Reset All App Data
                     </button>
                 </div>
             </div>
-            <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
-                <button id="settings-cancel-btn" class="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">Cancel</button>
-                <button id="settings-save-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">Save</button>
+            <div class="p-5 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3 bg-slate-50 dark:bg-slate-950">
+                <button id="settings-cancel-btn" class="px-6 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl font-medium transition-colors">Cancel</button>
+                <button id="settings-save-btn" class="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md transition-colors">Save Changes</button>
             </div>
         </div>
     </div>
 
     <!-- Instructions Modal -->
-    <div id="instructions-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col border border-slate-200 dark:border-slate-800">
-            <div class="p-6 border-b border-slate-200 dark:border-slate-800">
-                <h2 class="text-xl font-bold text-slate-800 dark:text-white">Ready to begin?</h2>
+    <div id="instructions-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <div class="p-8 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2" id="instr-title">Ready?</h2>
+                <p class="text-sm text-slate-500" id="instr-desc"></p>
             </div>
-            <div id="instructions-content" class="p-6 space-y-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
-                <!-- content -->
-            </div>
-            <div class="p-6 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
-                <button id="instructions-cancel-btn" class="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">Cancel</button>
-                <button id="instructions-start-btn" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-105">Start Test</button>
+            <div id="instructions-content" class="p-8 space-y-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed"></div>
+            <div class="p-8 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-4 bg-slate-50 dark:bg-slate-950">
+                <button id="instructions-cancel-btn" class="px-6 py-3 text-slate-600 hover:bg-slate-200 rounded-xl font-medium transition-colors">Cancel</button>
+                <button id="instructions-start-btn" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-105">Start Test</button>
             </div>
         </div>
     </div>
+    
+    <!-- Ghost Element for PDF Rendering -->
+    <div id="ghost-render-container"></div>
 
+    <!-- ==========================================
+         APPLICATION LOGIC
+    =========================================== -->
     <script>
+        // Initialize Icons
         lucide.createIcons();
-
-        // --- CONFIGURATION ---
+        
+        // Configure PDF.js Worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
 
-        // --- DOM HELPER ---
+        // DOM Helper
         const el = id => document.getElementById(id);
         
         // --- GLOBAL STATE ---
         const STATE = {
-            questions: [],
-            editingQuestionIndex: null, // Track which question is being edited
+            questions: [], 
             answerKey: {},
             testSettings: {
+                title: "Untitled Test",
+                description: "",
                 duration: 180,
                 marking: {
                     SingleCorrect: {correct: 4, incorrect: -1},
@@ -642,6 +851,7 @@
                     Numerical: {correct: 4, incorrect: 0}
                 }
             },
+            // Runtime Variables
             currentTestQs: [],
             userResponses: {},
             qStatus: [],
@@ -651,10 +861,11 @@
             tempCroppedImages: [],
             timePerQuestion: {},
             lastQuestionChangeTimestamp: null,
-            isPaused: false
+            isPaused: false,
+            isTestActive: false
         };
-        
-        // --- THEME LOGIC ---
+
+        // --- THEME MANAGEMENT ---
         const themeToggle = el('theme-toggle');
         const applyTheme = (theme) => {
             document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -664,69 +875,176 @@
         };
         themeToggle.addEventListener('click', () => applyTheme(localStorage.getItem('theme') === 'dark' ? 'light' : 'dark'));
 
-        // --- NAVIGATION LOGIC ---
-        const pages = {
-            setup: el('setup-page'),
-            test: el('test-page'),
-            result: el('result-page')
-        };
-
-        function showPage(pageName) {
-            Object.values(pages).forEach(p => p.classList.add('hidden'));
-            pages[pageName].classList.remove('hidden');
-            
-            // Navbar updates
-            if(pageName === 'test') {
-                el('test-timer').classList.remove('hidden');
-                el('pause-test-btn').classList.remove('hidden');
-            } else {
-                el('test-timer').classList.add('hidden');
-                el('pause-test-btn').classList.add('hidden');
-            }
-            window.scrollTo(0,0);
+        // --- MATH TYPESETTING (KaTeX) ---
+        function renderMath(element) {
+            renderMathInElement(element, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
         }
 
-        // --- LOCAL STORAGE & DATA MANAGEMENT ---
+        // --- LOADING INDICATOR ---
+        function showLoading(msg) {
+            el('loading-text').textContent = msg || 'Processing...';
+            const overlay = el('loading-overlay');
+            overlay.classList.remove('hidden');
+            overlay.style.display = 'flex'; // Explicitly set display
+        }
+        function hideLoading() {
+            const overlay = el('loading-overlay');
+            overlay.classList.add('hidden');
+            overlay.style.display = 'none'; // Explicitly hide
+        }
+        
+        // --- DATA NORMALIZATION (BACKWARD COMPATIBILITY) ---
+        function normalizeQuestion(q) {
+            // Fix old format: { source:"crop", image:..., rawText:null }
+            if (q.source === 'crop' && !q.mode) {
+                q.mode = 'image';
+            }
+            // Infer mode if missing
+            if (!q.mode) {
+                q.mode = q.image ? 'image' : 'text';
+            }
+            // Ensure options exist for non-numerical
+            if (!q.options && q.type !== 'Numerical') {
+                q.options = ['A', 'B', 'C', 'D'];
+            }
+            // Ensure text field exists if text mode
+            if (q.mode === 'text' && !q.text) {
+                q.text = q.rawText || "Question text missing";
+            }
+            return q;
+        }
+
+        // --- STORAGE & SESSION PERSISTENCE ---
         function saveData() {
             try {
                 localStorage.setItem('cbt_qs', JSON.stringify(STATE.questions));
                 localStorage.setItem('cbt_key', JSON.stringify(STATE.answerKey));
                 localStorage.setItem('cbt_sets', JSON.stringify(STATE.testSettings));
-            } catch (e) {
-                console.error("Storage Error:", e);
-                alert("Warning: Failed to save data. Local storage might be full.");
-            }
+            } catch (e) { alert("Local Storage Full! Clear data or delete questions."); }
         }
 
         function loadData() {
             try {
-                if(localStorage.getItem('jeeQuestions') && !localStorage.getItem('cbt_qs')) {
-                    STATE.questions = JSON.parse(localStorage.getItem('jeeQuestions') || '[]');
-                    STATE.answerKey = JSON.parse(localStorage.getItem('jeeAnswerKey') || '{}');
-                    const oldSettings = JSON.parse(localStorage.getItem('jeeTestSettings'));
-                    if (oldSettings) STATE.testSettings = oldSettings;
-                    saveData(); 
-                } else {
-                    STATE.questions = JSON.parse(localStorage.getItem('cbt_qs') || '[]');
-                    STATE.answerKey = JSON.parse(localStorage.getItem('cbt_key') || '{}');
-                    const savedSettings = JSON.parse(localStorage.getItem('cbt_sets'));
-                    if (savedSettings) STATE.testSettings = savedSettings;
-                }
-            } catch(e) {
-                console.error("Load Error:", e);
-                STATE.questions = [];
-                STATE.answerKey = {};
-            }
+                const rawQs = JSON.parse(localStorage.getItem('cbt_qs') || '[]');
+                // Normalize loaded questions
+                STATE.questions = rawQs.map(normalizeQuestion);
+                
+                STATE.answerKey = JSON.parse(localStorage.getItem('cbt_key') || '{}');
+                const savedSettings = JSON.parse(localStorage.getItem('cbt_sets'));
+                if (savedSettings) STATE.testSettings = {...STATE.testSettings, ...savedSettings};
+                updateDisplayInfo();
+            } catch(e) { console.error("Data load error", e); }
+            
             renderQuestionsList();
+            
+            // Check for Resume
+            if (localStorage.getItem('cbt_resume_session')) {
+                el('resume-modal').classList.remove('hidden');
+            }
+        }
+        
+        function updateDisplayInfo() {
+            el('display-title').textContent = STATE.testSettings.title;
+            el('display-desc').textContent = STATE.testSettings.description || "No description provided.";
+            el('nav-test-info').textContent = STATE.testSettings.title;
         }
 
-        // --- PDF RENDERING LOGIC ---
+        // --- SESSION RESUME LOGIC ---
+        function saveSessionState() {
+            if (!STATE.isTestActive) return;
+            const session = {
+                currentTestQs: STATE.currentTestQs,
+                userResponses: STATE.userResponses,
+                qStatus: STATE.qStatus,
+                timeLeft: STATE.timeLeft,
+                currentQuestionIndex: STATE.currentQuestionIndex,
+                timePerQuestion: STATE.timePerQuestion,
+                lastQuestionChangeTimestamp: STATE.lastQuestionChangeTimestamp,
+                isPaused: STATE.isPaused,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('cbt_resume_session', JSON.stringify(session));
+        }
+
+        function clearSessionState() {
+            localStorage.removeItem('cbt_resume_session');
+            STATE.isTestActive = false;
+        }
+
+        el('resume-session-btn').onclick = () => {
+            try {
+                const s = JSON.parse(localStorage.getItem('cbt_resume_session'));
+                if (!s) return;
+                
+                // Restore State
+                STATE.currentTestQs = s.currentTestQs.map(normalizeQuestion); // Safe check
+                STATE.userResponses = s.userResponses;
+                STATE.qStatus = s.qStatus;
+                STATE.timeLeft = s.timeLeft;
+                STATE.currentQuestionIndex = s.currentQuestionIndex;
+                STATE.timePerQuestion = s.timePerQuestion;
+                STATE.isPaused = s.isPaused;
+                STATE.isTestActive = true;
+                STATE.lastQuestionChangeTimestamp = Date.now(); 
+
+                el('resume-modal').classList.add('hidden');
+                
+                // Restore UI
+                showPage('test');
+                renderNavGrid();
+                loadQuestion(STATE.currentQuestionIndex);
+                startTimer();
+                if (STATE.isPaused) {
+                    STATE.isPaused = false; // togglePause flips it back to true
+                    togglePause();
+                }
+            } catch (e) {
+                clearSessionState();
+                el('resume-modal').classList.add('hidden');
+            }
+        };
+
+        el('discard-session-btn').onclick = () => {
+            clearSessionState();
+            el('resume-modal').classList.add('hidden');
+        };
+
+        window.addEventListener('beforeunload', () => saveSessionState());
+        document.addEventListener('visibilitychange', () => { if(document.hidden) saveSessionState(); });
+
+        // --- VIEW MANAGEMENT ---
+        const pages = { setup: el('setup-page'), test: el('test-page'), result: el('result-page') };
+
+        function showPage(pageName) {
+            Object.values(pages).forEach(p => p.classList.add('hidden'));
+            pages[pageName].classList.remove('hidden');
+            
+            if(pageName === 'test') {
+                el('test-timer-container').classList.remove('hidden');
+                el('pause-test-btn').classList.remove('hidden');
+            } else {
+                el('test-timer-container').classList.add('hidden');
+                el('pause-test-btn').classList.add('hidden');
+            }
+            window.scrollTo(0,0);
+        }
+
+        // --- PDF VIEWER (Original Robust Logic) ---
         let pdfDoc = null, pageNum = 1, scale = 1.2, canvasCtx = el('pdf-canvas').getContext('2d');
         let cropping = false, cropStart = {}, cropEnd = {};
 
         el('pdf-upload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(file && file.type === 'application/pdf') {
+                showLoading("Loading PDF...");
                 const fr = new FileReader();
                 fr.onload = function() {
                     const ta = new Uint8Array(this.result);
@@ -739,6 +1057,7 @@
                         el('crop-hint').classList.remove('hidden');
                         setTimeout(() => el('crop-hint').classList.add('hidden'), 5000);
                         renderPage(1);
+                        hideLoading();
                     });
                 };
                 fr.readAsArrayBuffer(file);
@@ -748,7 +1067,7 @@
         function renderPage(num) {
             if(!pdfDoc) return;
             pdfDoc.getPage(num).then(page => {
-                const containerWidth = el('pdf-scroll-container').clientWidth - 40;
+                const containerWidth = el('pdf-scroll-container').clientWidth - 64; // padding
                 const unscaledViewport = page.getViewport({scale: 1});
                 const fitScale = containerWidth / unscaledViewport.width;
                 const finalScale = scale * (fitScale > 1 ? fitScale : 1.5); 
@@ -767,10 +1086,7 @@
                 page.getTextContent().then(textContent => {
                     el('text-layer').innerHTML = '';
                     pdfjsLib.renderTextLayer({
-                        textContentSource: textContent,
-                        container: el('text-layer'),
-                        viewport: viewport,
-                        textDivs: []
+                        textContentSource: textContent, container: el('text-layer'), viewport: viewport, textDivs: []
                     });
                 });
             });
@@ -781,7 +1097,7 @@
         el('zoom-in-btn').onclick = () => { scale += 0.2; renderPage(pageNum); };
         el('zoom-out-btn').onclick = () => { if(scale > 0.6) scale -= 0.2; renderPage(pageNum); };
 
-        // --- CROP LOGIC ---
+        // --- CROP HANDLER ---
         const canvas = el('pdf-canvas');
         canvas.addEventListener('mousedown', e => {
             if(!pdfDoc) return;
@@ -811,44 +1127,29 @@
 
             const l = Math.min(cropStart.x, cropEnd.x), t = Math.min(cropStart.y, cropEnd.y);
             
-            // High Res Crop
+            // Capture High-Res from Canvas
             const tempC = document.createElement('canvas');
-            const s = 2; // scale factor
+            const s = 2; // Supersample
             tempC.width = w * s; tempC.height = h * s;
             const tCtx = tempC.getContext('2d');
             tCtx.fillStyle = 'white'; tCtx.fillRect(0,0,tempC.width,tempC.height);
             tCtx.drawImage(canvas, l, t, w, h, 0, 0, tempC.width, tempC.height);
 
-            // Capture text overlay
-            const spans = el('text-layer').querySelectorAll('span');
-            spans.forEach(span => {
-                const sr = span.getBoundingClientRect();
-                const sl = sr.left - r.left, st = sr.top - r.top;
-                if(sl < l + w && sl + sr.width > l && st < t + h && st + sr.height > t) {
-                    const style = getComputedStyle(span);
-                    const fs = parseFloat(style.fontSize);
-                    tCtx.font = style.font.replace(fs+'px', (fs*s)+'px');
-                    tCtx.fillStyle = style.color;
-                    tCtx.textBaseline = 'hanging';
-                    tCtx.fillText(span.textContent, (sl - l)*s, (st - t)*s);
-                }
-            });
-
             STATE.tempCroppedImages.push(tempC.toDataURL('image/jpeg', 0.9));
             updateCropPreviews();
+            
             el('question-setup-form').classList.remove('hidden');
             el('setup-placeholder').classList.add('hidden');
             el('question-setup-form').scrollIntoView({behavior: 'smooth', block: 'center'});
         });
 
         function updateCropPreviews() {
-            const c = el('crop-preview-container');
-            c.innerHTML = '';
+            const c = el('crop-preview-container'); c.innerHTML = '';
             STATE.tempCroppedImages.forEach((img, idx) => {
                 const div = document.createElement('div');
                 div.className = 'relative group flex-shrink-0';
-                div.innerHTML = `<img src="${img}" class="h-16 w-auto rounded border border-slate-300 shadow-sm bg-white">
-                <button onclick="removeCrop(${idx})" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 w-5 h-5 flex items-center justify-center text-xs shadow opacity-0 group-hover:opacity-100 transition-opacity">×</button>`;
+                div.innerHTML = `<img src="${img}" class="h-20 w-auto rounded-lg border border-slate-300 shadow-sm bg-white object-contain">
+                <button onclick="removeCrop(${idx})" class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center text-xs shadow-md opacity-0 group-hover:opacity-100 transition-opacity">×</button>`;
                 c.appendChild(div);
             });
             if(STATE.tempCroppedImages.length===0) {
@@ -857,14 +1158,11 @@
             }
         }
         window.removeCrop = idx => { STATE.tempCroppedImages.splice(idx, 1); updateCropPreviews(); };
-
         el('cancel-crop-btn').onclick = () => { STATE.tempCroppedImages = []; updateCropPreviews(); };
 
         el('add-question-btn').onclick = async () => {
             if(STATE.tempCroppedImages.length === 0) return;
-            const btn = el('add-question-btn'); btn.innerText = 'Processing...';
-            
-            // Stitch images
+            // Stitch images vertically if multiple
             const imgs = await Promise.all(STATE.tempCroppedImages.map(src => new Promise(r => {const i=new Image(); i.onload=()=>r(i); i.src=src;})));
             const w = Math.max(...imgs.map(i => i.width));
             const h = imgs.reduce((a,b) => a + b.height + 10, 0);
@@ -877,8 +1175,7 @@
             
             const q = {
                 id: 'q'+Date.now() + Math.random().toString(36).substr(2,5),
-                source: 'crop',    // Track source
-                rawText: null,     // No raw text for crops
+                mode: 'image',
                 subject: el('q-subject').value,
                 type: el('q-type').value,
                 image: cvs.toDataURL('image/jpeg', 0.85),
@@ -888,32 +1185,144 @@
             saveData();
             renderQuestionsList();
             STATE.tempCroppedImages = []; updateCropPreviews();
-            btn.innerText = 'Add Question';
+        };
+
+        // --- MANUAL ADD (Text/KaTeX) ---
+        el('manual-add-btn').onclick = () => {
+            el('manual-q-text').value = ''; 
+            el('opt-a').value = ''; el('opt-b').value = ''; el('opt-c').value = ''; el('opt-d').value = '';
+            updateManualPreview();
+            el('manual-add-modal').classList.remove('hidden');
+            toggleManualOptions();
+        };
+
+        el('manual-cancel-btn').onclick = () => el('manual-add-modal').classList.add('hidden');
+        el('manual-q-type').onchange = toggleManualOptions;
+
+        function toggleManualOptions() {
+            const type = el('manual-q-type').value;
+            el('manual-options-container').style.display = type === 'Numerical' ? 'none' : 'block';
+            updateManualPreview();
+        }
+
+        // Live Preview
+        ['manual-q-text', 'opt-a', 'opt-b', 'opt-c', 'opt-d'].forEach(id => {
+            el(id).addEventListener('input', updateManualPreview);
+        });
+
+        function updateManualPreview() {
+            const text = el('manual-q-text').value;
+            const type = el('manual-q-type').value;
+            const prevText = el('preview-q-text');
+            const prevOpts = el('preview-options');
+
+            // Render Text
+            prevText.innerHTML = text ? text.replace(/\n/g, '<br>') : '<span class="text-slate-300 italic">Question text will appear here...</span>';
+            renderMath(prevText);
+
+            // Render Options
+            prevOpts.innerHTML = '';
+            if(type !== 'Numerical') {
+                ['A','B','C','D'].forEach(lbl => {
+                    const val = el('opt-'+lbl.toLowerCase()).value;
+                    if(val) {
+                        const div = document.createElement('div');
+                        div.className = "flex items-start gap-3 p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50";
+                        div.innerHTML = `<span class="font-bold text-indigo-600 text-sm mt-0.5 w-6 text-center">(${lbl})</span> <div class="text-sm text-slate-700 dark:text-slate-300 flex-grow">${val}</div>`;
+                        renderMath(div.querySelector('div'));
+                        prevOpts.appendChild(div);
+                    }
+                });
+            } else {
+                prevOpts.innerHTML = `<div class="p-4 text-sm font-medium text-slate-400 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-center">Numerical Input Field</div>`;
+            }
+        }
+
+        el('manual-save-btn').onclick = () => {
+            const text = el('manual-q-text').value;
+            if(!text.trim()) { alert("Please enter question text"); return; }
+            
+            const q = {
+                id: 'q'+Date.now(),
+                mode: 'text',
+                text: text,
+                subject: el('manual-q-subject').value,
+                type: el('manual-q-type').value,
+                options: el('manual-q-type').value === 'Numerical' ? [] : [
+                    el('opt-a').value, el('opt-b').value, el('opt-c').value, el('opt-d').value
+                ]
+            };
+            STATE.questions.push(q);
+            saveData(); renderQuestionsList();
+            el('manual-add-modal').classList.add('hidden');
+        };
+
+        // --- QUESTION LIST & METADATA EDIT ---
+        let editIdx = null;
+
+        function openEditMetadata(idx) {
+            editIdx = idx;
+            const q = STATE.questions[idx];
+            el('edit-meta-subject').value = q.subject;
+            el('edit-meta-type').value = q.type;
+            el('edit-metadata-modal').classList.remove('hidden');
+        }
+
+        el('edit-meta-cancel').onclick = () => el('edit-metadata-modal').classList.add('hidden');
+        
+        el('edit-meta-save').onclick = () => {
+            if (editIdx === null) return;
+            const q = STATE.questions[editIdx];
+            const newSub = el('edit-meta-subject').value;
+            const newType = el('edit-meta-type').value;
+
+            // Logic: if type changes, reset answer key and options logic if needed
+            if (q.type !== newType) {
+                 delete STATE.answerKey[q.id];
+                 if (newType === 'Numerical') q.options = [];
+                 else if (q.mode === 'image' || !q.options.length) {
+                     // If converting image/numerical to MCQ, add defaults
+                     q.options = ['A','B','C','D']; 
+                 }
+            }
+            q.subject = newSub;
+            q.type = newType;
+            
+            saveData(); 
+            renderQuestionsList();
+            el('edit-metadata-modal').classList.add('hidden');
         };
 
         function renderQuestionsList() {
-            const list = el('question-list');
-            list.innerHTML = '';
+            const list = el('question-list'); list.innerHTML = '';
             STATE.questions.forEach((q, idx) => {
                 const item = document.createElement('div');
-                // Added cursor-pointer to indicate clickability
-                item.className = 'flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 group border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all cursor-pointer';
-                // Click handler for editing
-                item.onclick = (e) => openQuestionEditor(idx);
+                item.className = 'flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 group border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all cursor-pointer';
+                
+                // Click to Edit Metadata (except delete button)
+                item.onclick = (e) => {
+                    if (e.target.closest('.delete-btn')) return;
+                    openEditMetadata(idx);
+                };
+
+                let thumb = '';
+                if(q.mode === 'image') {
+                    thumb = `<div class="w-10 h-10 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden"><img src="${q.image}" class="max-w-full max-h-full object-contain q-img-invert"></div>`;
+                } else {
+                    thumb = `<div class="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs">TXT</div>`;
+                }
 
                 item.innerHTML = `
-                    <div class="w-12 h-12 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        <img src="${q.image}" class="max-w-full max-h-full object-contain">
-                    </div>
+                    ${thumb}
                     <div class="flex-grow min-w-0">
-                        <div class="flex items-center gap-2">
-                            <span class="font-medium text-sm text-slate-700 dark:text-slate-200 truncate">Q.${idx+1}</span>
-                            <span class="text-[10px] bg-slate-100 dark:bg-slate-700 px-1.5 rounded text-slate-500 uppercase tracking-wide">${q.subject.substr(0,3)}</span>
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <span class="font-bold text-sm text-slate-700 dark:text-slate-200">Q${idx+1}</span>
+                            <span class="text-[10px] bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-500 font-bold uppercase tracking-wide">${q.subject.substr(0,3)}</span>
+                            <span class="text-[10px] border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded text-slate-400 font-medium">${q.type === 'SingleCorrect' ? 'SCQ' : q.type === 'MultipleCorrect' ? 'MCQ' : 'NUM'}</span>
                         </div>
-                        <p class="text-xs text-slate-400 truncate">${q.type}</p>
+                        <p class="text-xs text-slate-400 truncate">${q.mode==='text' ? q.text : 'Image Question'}</p>
                     </div>
-                    <!-- Added stopPropagation to delete button -->
-                    <button onclick="event.stopPropagation(); deleteQ(${idx})" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <button onclick="deleteQ(${idx})" class="delete-btn text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 `;
                 list.appendChild(item);
             });
@@ -923,255 +1332,76 @@
         }
         
         window.deleteQ = idx => { 
-            if(confirm('Delete this question?')) { 
-                const qId = STATE.questions[idx].id;
-                delete STATE.answerKey[qId];
+            if(confirm('Are you sure you want to delete this question?')) { 
+                delete STATE.answerKey[STATE.questions[idx].id];
                 STATE.questions.splice(idx, 1); 
-                saveData(); 
-                renderQuestionsList(); 
-            }
+                saveData(); renderQuestionsList(); 
+            } 
         };
 
-        // --- MANUAL ADD ENTRY (FIXED & EDITABLE) ---
-        
-        // Debounce utility to prevent flickering
-        function debounce(func, wait) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), wait);
-            };
-        }
-
-        // Open Modal Logic
-        function openQuestionEditor(index) {
-            STATE.editingQuestionIndex = index;
-            const modal = el('manual-add-modal');
-            const saveBtn = el('manual-save-btn');
-            
-            if (index === null) {
-                // NEW QUESTION MODE
-                el('manual-q-text').value = ''; 
-                el('manual-q-preview').innerHTML = ''; 
-                el('manual-q-text-group').classList.remove('hidden'); // Ensure text area is visible
-                saveBtn.innerText = 'Save Question';
-            } else {
-                // EDIT MODE
-                const q = STATE.questions[index];
-                el('manual-q-subject').value = q.subject;
-                el('manual-q-type').value = q.type;
-
-                if (q.source === 'crop') {
-                    // For crop questions, hide text inputs, only allow metadata edit
-                    el('manual-q-text-group').classList.add('hidden');
-                    saveBtn.innerText = 'Update Metadata';
-                } else {
-                    // For manual questions, fill text and render preview
-                    el('manual-q-text-group').classList.remove('hidden');
-                    el('manual-q-text').value = q.rawText || '';
-                    const preview = el('manual-q-preview');
-                    preview.innerHTML = q.rawText || '';
-                    preview.style.color = 'inherit';
-                    MathJax.typesetPromise([preview]);
-                    saveBtn.innerText = 'Update Question';
-                }
-            }
-            modal.classList.remove('hidden');
-        }
-
-        function closeManualModal() {
-            el('manual-add-modal').classList.add('hidden');
-            STATE.editingQuestionIndex = null;
-        }
-
-        el('manual-add-btn').onclick = () => openQuestionEditor(null);
-        el('manual-cancel-btn').onclick = () => closeManualModal();
-        
-        // Debounced Input Handler
-        const handleInput = debounce(async function(val) {
-            const preview = el('manual-q-preview');
-            preview.innerHTML = val;
-            // Force inherit to ensure styles match normal text
-            preview.style.color = 'inherit';
-            await MathJax.typesetPromise([preview]);
-        }, 300);
-
-        el('manual-q-text').addEventListener('input', function() {
-            handleInput(this.value);
-        });
-        
-        el('manual-save-btn').onclick = async () => {
-            const subject = el('manual-q-subject').value;
-            const type = el('manual-q-type').value;
-            const isEdit = STATE.editingQuestionIndex !== null;
-            
-            // --- SCENARIO 1: Editing a Crop Question (Metadata only) ---
-            if (isEdit && STATE.questions[STATE.editingQuestionIndex].source === 'crop') {
-                const q = STATE.questions[STATE.editingQuestionIndex];
-                
-                // If type changed, clear answer key and reset options
-                if (q.type !== type) {
-                    delete STATE.answerKey[q.id];
-                    q.options = type === 'Numerical' ? [] : ['A','B','C','D'];
-                }
-                q.subject = subject;
-                q.type = type;
-                
-                saveData();
-                renderQuestionsList();
-                closeManualModal();
-                return;
-            }
-
-            // --- SCENARIO 2: Manual Question (New or Edit) ---
-            const txt = el('manual-q-text').value;
-            if(!txt.trim()) { alert("Please enter question text"); return; }
-            
-            const btn = el('manual-save-btn');
-            const originalText = btn.innerText;
-            btn.innerText = 'Rendering...';
-            
-            // GOAL 3: Use class-based styling for consistent rendering
-            const renderContainer = document.createElement('div');
-            renderContainer.className = 'question-text-render'; // Apply shared class
-            renderContainer.style.cssText = `
-                position: absolute; 
-                left: -9999px; 
-                top: 0;
-                width: 650px; 
-                padding: 40px; 
-                background: white; 
-                /* Font properties handled by CSS class now */
-            `;
-            renderContainer.innerHTML = txt;
-            document.body.appendChild(renderContainer);
-            
-            try {
-                // Wait for MathJax to fully render SVGs
-                await MathJax.typesetPromise([renderContainer]);
-                await new Promise(r => setTimeout(r, 100)); // Buffer for layout
-                
-                const cvs = await html2canvas(renderContainer, { 
-                    scale: 2, 
-                    backgroundColor: '#ffffff',
-                    logging: false,
-                    useCORS: true
-                });
-                
-                const imageData = cvs.toDataURL('image/jpeg', 0.9);
-                const options = type === 'Numerical' ? [] : ['A','B','C','D'];
-
-                if (isEdit) {
-                    const q = STATE.questions[STATE.editingQuestionIndex];
-                    // Reset key if type changed
-                    if (q.type !== type) {
-                        delete STATE.answerKey[q.id];
-                    }
-                    // Update fields
-                    q.subject = subject;
-                    q.type = type;
-                    q.rawText = txt;
-                    q.image = imageData;
-                    q.options = options;
-                } else {
-                    // Create New
-                    STATE.questions.push({
-                        id: 'q'+Date.now() + Math.random().toString(36).substr(2,5),
-                        source: 'manual',
-                        rawText: txt,
-                        subject: subject,
-                        type: type,
-                        image: imageData,
-                        options: options
-                    });
-                }
-
-                saveData(); 
-                renderQuestionsList();
-                closeManualModal();
-            } catch(e) {
-                console.error("Rendering failed", e);
-                alert("Failed to render image. Please try again.");
-            } finally {
-                if(document.body.contains(renderContainer)) document.body.removeChild(renderContainer);
-                btn.innerText = originalText;
-            }
-        };
-
-        // --- ANSWER KEY MANAGEMENT ---
+        // --- ANSWER KEY ---
         el('set-answer-key-btn').onclick = () => {
             const lst = el('answer-key-list'); lst.innerHTML = '';
             STATE.questions.forEach((q, i) => {
                 const val = STATE.answerKey[q.id] || [];
                 const row = document.createElement('div');
-                row.className = 'flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-100 dark:border-slate-700';
+                row.className = 'flex items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm';
                 
                 let inp = '';
                 if(q.type === 'Numerical') {
-                    inp = `<input type="number" step="any" class="key-inp w-24 p-1 border rounded text-sm bg-transparent focus:ring-1 ring-indigo-500 outline-none" data-id="${q.id}" value="${val[0]||''}" placeholder="Ans">`;
+                    inp = `<input type="number" step="any" class="w-28 p-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-transparent outline-none focus:border-indigo-500 font-mono" onchange="updateKey('${q.id}', 'num', this)" value="${val[0]||''}" placeholder="Value">`;
                 } else {
-                    inp = `<div class="flex gap-2">${q.options.map(opt => `
-                        <label class="cursor-pointer flex items-center gap-1 text-sm select-none">
-                            <input type="${q.type==='SingleCorrect'?'radio':'checkbox'}" name="k-${q.id}" value="${opt}" ${val.includes(opt)?'checked':''} class="accent-indigo-600"> ${opt}
+                    inp = `<div class="flex gap-3">${['A','B','C','D'].map(opt => `
+                        <label class="cursor-pointer flex items-center gap-1.5 text-sm select-none group">
+                            <input type="${q.type==='SingleCorrect'?'radio':'checkbox'}" name="k-${q.id}" value="${opt}" ${val.includes(opt)?'checked':''} class="accent-indigo-600 w-4 h-4" onchange="updateKey('${q.id}', 'opt', this)"> 
+                            <span class="font-bold text-slate-600 dark:text-slate-400 group-hover:text-indigo-600">${opt}</span>
                         </label>`).join('')}</div>`;
                 }
-                row.innerHTML = `<span class="font-medium text-sm">Q.${i+1} <span class="text-xs text-slate-400">(${q.type})</span></span> ${inp}`;
+                row.innerHTML = `<span class="font-bold text-sm text-slate-700 dark:text-slate-200">Q${i+1} <span class="text-xs font-normal text-slate-400 ml-1">(${q.type})</span></span> ${inp}`;
                 lst.appendChild(row);
             });
             el('answer-key-modal').classList.remove('hidden');
         };
         el('answer-key-cancel-btn').onclick = () => el('answer-key-modal').classList.add('hidden');
-        el('answer-key-save-btn').onclick = () => {
-            STATE.questions.forEach(q => {
-                if(q.type==='Numerical') {
-                    const v = document.querySelector(`input[data-id="${q.id}"]`).value;
-                    if(v) STATE.answerKey[q.id] = [v];
-                } else {
-                    const chk = document.querySelectorAll(`input[name="k-${q.id}"]:checked`);
-                    if(chk.length) STATE.answerKey[q.id] = Array.from(chk).map(c=>c.value);
-                }
-            });
-            saveData();
-            el('answer-key-modal').classList.add('hidden');
+        el('answer-key-save-btn').onclick = () => { saveData(); el('answer-key-modal').classList.add('hidden'); };
+        
+        window.updateKey = (qid, type, elem) => {
+            if(type === 'num') {
+                STATE.answerKey[qid] = [elem.value];
+            } else {
+                const chk = document.querySelectorAll(`input[name="k-${qid}"]:checked`);
+                STATE.answerKey[qid] = Array.from(chk).map(c=>c.value);
+            }
         };
 
-        // --- TEST FLOW LOGIC ---
+        // --- TEST FLOW ---
         el('start-test-btn').onclick = () => {
-             const missing = STATE.questions.filter(q => !STATE.answerKey[q.id] || STATE.answerKey[q.id].length === 0);
-             if(missing.length > 0) {
-                 alert(`Cannot start test: ${missing.length} questions are missing Answer Keys.`);
-                 return;
-             }
-             
-             STATE.currentTestQs = [];
-             ['Physics','Chemistry','Math'].forEach(sub => {
-                 const subQs = STATE.questions.filter(q => q.subject === sub);
-                 ['SingleCorrect','MultipleCorrect','Numerical'].forEach(typ => {
-                     STATE.currentTestQs.push(...subQs.filter(q => q.type === typ));
-                 });
-             });
-             
-             if(STATE.currentTestQs.length === 0 && STATE.questions.length > 0) STATE.currentTestQs = [...STATE.questions];
-
-             const ms = STATE.testSettings.marking;
-             el('instructions-content').innerHTML = `
-                <p><strong>Duration:</strong> ${STATE.testSettings.duration} Minutes</p>
-                <p><strong>Total Questions:</strong> ${STATE.currentTestQs.length}</p>
-                <div class="mt-4 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg text-xs">
-                    <div class="grid grid-cols-3 gap-2 font-bold border-b border-slate-200 dark:border-slate-700 pb-1 mb-1">
-                        <span>Type</span><span>Correct</span><span>Incorrect</span>
+            if(STATE.questions.length === 0) return;
+            STATE.currentTestQs = [...STATE.questions];
+            
+            el('instr-title').textContent = STATE.testSettings.title;
+            el('instr-desc').textContent = STATE.testSettings.description;
+            el('instructions-content').innerHTML = `
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl text-center">
+                        <div class="text-2xl font-bold text-indigo-600">${STATE.testSettings.duration}</div>
+                        <div class="text-xs uppercase font-bold text-slate-400">Minutes</div>
                     </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <span>SCQ</span><span>+${ms.SingleCorrect.correct}</span><span class="text-red-500">${ms.SingleCorrect.incorrect}</span>
-                        <span>MCQ</span><span>+${ms.MultipleCorrect.correct}</span><span class="text-red-500">${ms.MultipleCorrect.incorrect}</span>
-                        <span>Num</span><span>+${ms.Numerical.correct}</span><span class="text-red-500">${ms.Numerical.incorrect}</span>
+                    <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl text-center">
+                        <div class="text-2xl font-bold text-indigo-600">${STATE.currentTestQs.length}</div>
+                        <div class="text-xs uppercase font-bold text-slate-400">Questions</div>
                     </div>
-                </div>`;
-             el('instructions-modal').classList.remove('hidden');
+                </div>
+                <div class="space-y-2 text-slate-600 dark:text-slate-300">
+                    <p>• Ensure you have a stable internet connection.</p>
+                    <p>• Don't refresh the page during the test.</p>
+                    <p>• Use the "Review" button to flag questions for later.</p>
+                </div>
+            `;
+            el('instructions-modal').classList.remove('hidden');
         };
-        
+
         el('instructions-cancel-btn').onclick = () => el('instructions-modal').classList.add('hidden');
-        
         el('instructions-start-btn').onclick = () => {
             el('instructions-modal').classList.add('hidden');
             STATE.userResponses = {};
@@ -1182,71 +1412,45 @@
             STATE.currentTestQs.forEach(q => STATE.timePerQuestion[q.id] = 0);
             STATE.lastQuestionChangeTimestamp = Date.now();
             STATE.isPaused = false;
+            STATE.isTestActive = true;
             
             startTimer();
             loadQuestion(0);
             renderNavGrid();
             showPage('test');
+            saveSessionState();
         };
-
-        // --- TIMER & PAUSE LOGIC ---
-        function startTimer() {
-            if(STATE.timerInterval) clearInterval(STATE.timerInterval);
-            const display = el('test-timer');
-            STATE.timerInterval = setInterval(() => {
-                if(STATE.isPaused) return;
-                STATE.timeLeft--;
-                const h = Math.floor(STATE.timeLeft / 3600);
-                const m = Math.floor((STATE.timeLeft % 3600) / 60);
-                const s = STATE.timeLeft % 60;
-                display.textContent = `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-                if(STATE.timeLeft <= 0) {
-                    clearInterval(STATE.timerInterval);
-                    alert("Time's up! Submitting test automatically.");
-                    finishTest();
-                }
-            }, 1000);
-        }
-
-        function updateTimeSpent() {
-            if(STATE.lastQuestionChangeTimestamp && !STATE.isPaused) {
-                const now = Date.now();
-                const diffSec = (now - STATE.lastQuestionChangeTimestamp) / 1000;
-                const qId = STATE.currentTestQs[STATE.currentQuestionIndex].id;
-                STATE.timePerQuestion[qId] = (STATE.timePerQuestion[qId] || 0) + diffSec;
-                STATE.lastQuestionChangeTimestamp = now;
-            }
-        }
-
-        window.togglePause = () => {
-            if(STATE.isPaused) {
-                STATE.isPaused = false;
-                STATE.lastQuestionChangeTimestamp = Date.now();
-                el('pause-overlay').classList.add('hidden');
-                el('pause-test-btn').innerText = 'Pause';
-                el('pause-test-btn').classList.replace('bg-amber-100', 'bg-transparent');
-            } else {
-                updateTimeSpent();
-                STATE.isPaused = true;
-                STATE.lastQuestionChangeTimestamp = null;
-                el('pause-overlay').classList.remove('hidden');
-                el('pause-test-btn').innerText = 'Resume';
-            }
-        };
-        el('pause-test-btn').onclick = togglePause;
 
         function loadQuestion(idx) {
             if(idx < 0 || idx >= STATE.currentTestQs.length) return;
-            updateTimeSpent();
+            // Record time for previous
+            if(STATE.lastQuestionChangeTimestamp && !STATE.isPaused) {
+                const now = Date.now();
+                const prevQ = STATE.currentTestQs[STATE.currentQuestionIndex];
+                STATE.timePerQuestion[prevQ.id] = (STATE.timePerQuestion[prevQ.id] || 0) + (now - STATE.lastQuestionChangeTimestamp)/1000;
+                STATE.lastQuestionChangeTimestamp = now;
+            }
+
             STATE.currentQuestionIndex = idx;
             const q = STATE.currentTestQs[idx];
             
             if(STATE.qStatus[idx] === 'not-visited') STATE.qStatus[idx] = 'not-answered';
             
-            el('q-number-subject').textContent = `Question ${idx+1} | ${q.subject}`;
-            el('q-type-badge').textContent = q.type === 'SingleCorrect' ? 'SCQ' : q.type === 'MultipleCorrect' ? 'MCQ' : 'Integer';
-            el('q-image').src = q.image;
-            
+            // Header
+            el('q-number-subject').textContent = `Q${idx+1}. ${q.subject}`;
+            el('q-type-badge').textContent = q.type === 'SingleCorrect' ? 'SCQ' : q.type === 'MultipleCorrect' ? 'MCQ' : 'NUM';
+            el('q-time-spent').textContent = Math.round(STATE.timePerQuestion[q.id] || 0) + 's';
+
+            // Content
+            const area = el('q-content-area');
+            if(q.mode === 'text') {
+                area.innerHTML = `<div class="text-xl leading-relaxed text-slate-800 dark:text-slate-100 font-serif">${q.text.replace(/\n/g, '<br>')}</div>`;
+                renderMath(area);
+            } else {
+                area.innerHTML = `<img src="${q.image}" class="max-w-full h-auto rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 mx-auto q-img-invert">`;
+            }
+
+            // Options
             const optsArea = el('q-options-area');
             const numArea = el('q-numerical-area');
             const numInput = el('q-numerical-input');
@@ -1257,31 +1461,47 @@
                 optsArea.classList.add('hidden');
                 numArea.classList.remove('hidden');
                 numInput.value = existingResp[0] || '';
-                numInput.oninput = (e) => STATE.userResponses[q.id] = [e.target.value];
+                numInput.oninput = (e) => { 
+                    STATE.userResponses[q.id] = [e.target.value];
+                    saveSessionState();
+                };
             } else {
                 numArea.classList.add('hidden');
                 optsArea.classList.remove('hidden');
-                q.options.forEach(opt => {
-                    const isSelected = existingResp.includes(opt);
+                
+                const labels = ['A','B','C','D'];
+                const optionTexts = q.mode === 'text' ? q.options : labels; 
+
+                labels.forEach((label, i) => {
+                    // Safety check
+                    if(q.mode === 'text' && !optionTexts[i]) return;
+
+                    const isSelected = existingResp.includes(label);
                     const btn = document.createElement('div');
-                    const baseClass = "cursor-pointer p-3 rounded-xl border transition-all flex items-center gap-3";
-                    const activeClass = "bg-indigo-50 border-indigo-500 dark:bg-indigo-900/30 dark:border-indigo-500";
-                    const inactiveClass = "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800";
+                    const baseClass = "cursor-pointer p-5 rounded-2xl border transition-all flex items-start gap-5 select-none hover:shadow-md";
+                    const activeClass = "bg-indigo-50 border-indigo-500 dark:bg-indigo-900/30 dark:border-indigo-500 shadow-md ring-1 ring-indigo-500/50";
+                    const inactiveClass = "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800";
                     btn.className = `${baseClass} ${isSelected ? activeClass : inactiveClass}`;
+                    
+                    const textContent = q.mode === 'text' ? optionTexts[i] : `Option ${label}`;
+                    
                     btn.innerHTML = `
-                        <div class="w-6 h-6 rounded-full border ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 text-transparent'} flex items-center justify-center text-xs font-bold transition-all">${opt}</div>
-                        <span class="font-medium text-slate-700 dark:text-slate-200">${opt}</span>
+                        <div class="w-8 h-8 rounded-lg border ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 dark:border-slate-600 text-slate-400 bg-white dark:bg-slate-900'} flex items-center justify-center text-sm font-bold shrink-0 shadow-sm">${label}</div>
+                        <div class="text-base font-medium text-slate-700 dark:text-slate-200 flex-grow pt-1 leading-relaxed">${textContent}</div>
                     `;
+                    
+                    if(q.mode === 'text') renderMath(btn);
+
                     btn.onclick = () => {
                         if(STATE.isPaused) return;
-                        if(q.type === 'SingleCorrect') STATE.userResponses[q.id] = [opt];
+                        if(q.type === 'SingleCorrect') STATE.userResponses[q.id] = [label];
                         else {
-                            let current = STATE.userResponses[q.id] || [];
-                            if(current.includes(opt)) current = current.filter(x => x !== opt);
-                            else current.push(opt);
-                            STATE.userResponses[q.id] = current;
+                            let curr = STATE.userResponses[q.id] || [];
+                            if(curr.includes(label)) curr = curr.filter(x => x !== label); else curr.push(label);
+                            STATE.userResponses[q.id] = curr;
                         }
                         loadQuestion(STATE.currentQuestionIndex);
+                        saveSessionState();
                     };
                     optsArea.appendChild(btn);
                 });
@@ -1295,7 +1515,7 @@
                 const b = document.createElement('button');
                 b.id = `nav-btn-${i}`;
                 b.textContent = i+1;
-                b.className = `w-9 h-9 rounded-lg text-sm font-bold transition-all border`;
+                b.className = `w-10 h-10 rounded-xl text-sm font-bold transition-all border transform hover:scale-105`;
                 b.onclick = () => { if(!STATE.isPaused) loadQuestion(i); };
                 p.appendChild(b);
             });
@@ -1306,209 +1526,239 @@
             STATE.currentTestQs.forEach((q, i) => {
                 const b = el(`nav-btn-${i}`);
                 if(!b) return;
-                b.className = `w-9 h-9 rounded-lg text-sm font-bold transition-all border`;
+                
+                // Reset classes
+                b.className = `w-10 h-10 rounded-xl text-sm font-bold transition-all border transform hover:scale-105`;
+                
                 const s = STATE.qStatus[i];
                 if(s === 'answered') b.classList.add('q-status-answered');
                 else if(s === 'review') b.classList.add('q-status-review');
                 else if(s === 'not-answered') b.classList.add('q-status-not-answered');
                 else b.classList.add('q-status-not-visited');
+                
                 if(i === STATE.currentQuestionIndex) b.classList.add('q-status-current');
             });
         }
 
-        function handleNext(markReview) {
-            if(STATE.isPaused) return; 
+        el('save-next-btn').onclick = () => {
             const idx = STATE.currentQuestionIndex;
-            const q = STATE.currentTestQs[idx];
-            const resp = STATE.userResponses[q.id];
-            const hasResponse = resp && resp.length > 0 && resp[0] !== '';
-            
-            if(markReview) STATE.qStatus[idx] = 'review';
-            else {
-                if(hasResponse) STATE.qStatus[idx] = 'answered';
-                else STATE.qStatus[idx] = 'not-answered';
-            }
-            if(idx < STATE.currentTestQs.length - 1) loadQuestion(idx + 1);
-            else updateNavGridUI();
-        }
+            const hasResp = (STATE.userResponses[STATE.currentTestQs[idx].id]||[]).length > 0;
+            STATE.qStatus[idx] = hasResp ? 'answered' : 'not-answered';
+            if(idx < STATE.currentTestQs.length - 1) loadQuestion(idx + 1); else updateNavGridUI();
+        };
 
-        el('save-next-btn').onclick = () => handleNext(false);
-        el('mark-review-btn').onclick = () => handleNext(true);
+        el('mark-review-btn').onclick = () => {
+            STATE.qStatus[STATE.currentQuestionIndex] = 'review';
+            if(STATE.currentQuestionIndex < STATE.currentTestQs.length - 1) loadQuestion(STATE.currentQuestionIndex + 1); else updateNavGridUI();
+        };
+
         el('clear-response-btn').onclick = () => {
-            if(STATE.isPaused) return;
-            const qId = STATE.currentTestQs[STATE.currentQuestionIndex].id;
-            delete STATE.userResponses[qId];
-            STATE.qStatus[STATE.currentQuestionIndex] = 'not-answered';
+            delete STATE.userResponses[STATE.currentTestQs[STATE.currentQuestionIndex].id];
+            el('q-numerical-input').value = '';
             loadQuestion(STATE.currentQuestionIndex);
         };
+        
         el('submit-test-btn').onclick = () => {
-            if(STATE.isPaused) return;
-            const attempted = STATE.qStatus.filter(s => s === 'answered' || s === 'review').length;
-            if(confirm(`You have attempted ${attempted} out of ${STATE.currentTestQs.length}. Submit Test?`)) finishTest();
+            if(confirm("Are you sure you want to submit the test?")) finishTest();
         };
 
-        // --- RESULTS LOGIC ---
-        function finishTest() {
-            updateTimeSpent();
+        // --- TIMER ---
+        function startTimer() {
             if(STATE.timerInterval) clearInterval(STATE.timerInterval);
-            STATE.lastQuestionChangeTimestamp = null;
-            
-            let score = 0, correctCount = 0, incorrectCount = 0, unattemptedCount = 0;
-            const stats = { Physics: {c:0, w:0, u:0}, Chemistry: {c:0, w:0, u:0}, Math: {c:0, w:0, u:0} };
-            
-            STATE.currentTestQs.forEach(q => {
-                const userAns = STATE.userResponses[q.id] || [];
-                const key = STATE.answerKey[q.id] || [];
-                const marking = STATE.testSettings.marking[q.type];
-                
-                if(!stats[q.subject]) stats[q.subject] = {c:0, w:0, u:0};
-                
-                if(userAns.length === 0 || userAns[0] === '') {
-                    unattemptedCount++; stats[q.subject].u++;
-                } else {
-                    let isCorrect = false;
-                    if(q.type === 'Numerical') {
-                        const uVal = parseFloat(userAns[0]), kVal = parseFloat(key[0]);
-                        if(!isNaN(uVal) && !isNaN(kVal) && Math.abs(uVal - kVal) < 0.000001) isCorrect = true;
-                    } else {
-                        if(JSON.stringify([...userAns].sort()) === JSON.stringify([...key].sort())) isCorrect = true;
-                    }
-                    if(isCorrect) { score += marking.correct; correctCount++; stats[q.subject].c++; } 
-                    else { score += marking.incorrect; incorrectCount++; stats[q.subject].w++; }
-                }
-            });
-            
-            el('total-score').textContent = score;
-            el('correct-count').textContent = correctCount;
-            el('incorrect-count').textContent = incorrectCount;
-            el('unattempted-count').textContent = unattemptedCount;
-            
-            const totalQs = STATE.currentTestQs.length;
-            const totalTime = Object.values(STATE.timePerQuestion).reduce((a,b)=>a+b, 0);
-            el('avg-time-overall').textContent = totalQs ? (totalTime / totalQs).toFixed(1) + 's' : '0s';
-
-            ['Physics', 'Chemistry', 'Math'].forEach(sub => {
-                 const qs = STATE.currentTestQs.filter(q => q.subject === sub);
-                 const time = qs.reduce((acc, q) => acc + (STATE.timePerQuestion[q.id] || 0), 0);
-                 const avg = qs.length ? (time / qs.length).toFixed(1) + 's' : '0s';
-                 if(sub === 'Physics') el('avg-time-phy').textContent = avg;
-                 if(sub === 'Chemistry') el('avg-time-chem').textContent = avg;
-                 if(sub === 'Math') el('avg-time-math').textContent = avg;
-                 const sData = stats[sub];
-                 const containerId = sub.toLowerCase() + '-results';
-                 if(el(containerId)) {
-                    el(containerId).innerHTML = `
-                        <h5 class="font-bold text-slate-700 dark:text-slate-200 mb-2">${sub}</h5>
-                        <div class="space-y-1 text-sm">
-                            <div class="flex justify-between"><span class="text-green-600">Correct</span> <span>${sData.c}</span></div>
-                            <div class="flex justify-between"><span class="text-red-500">Incorrect</span> <span>${sData.w}</span></div>
-                            <div class="flex justify-between"><span class="text-slate-400">Unattempted</span> <span>${sData.u}</span></div>
-                        </div>`;
-                 }
-            });
-            
-            showPage('result');
-            renderDetailedReview('all');
-            renderCharts(correctCount, incorrectCount, unattemptedCount, stats);
+            STATE.timerInterval = setInterval(() => {
+                if(STATE.isPaused) return;
+                STATE.timeLeft--;
+                const h = Math.floor(STATE.timeLeft / 3600);
+                const m = Math.floor((STATE.timeLeft % 3600) / 60);
+                const s = STATE.timeLeft % 60;
+                el('test-timer').textContent = `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                if(STATE.timeLeft <= 0) finishTest();
+            }, 1000);
         }
 
-        let charts = {}; 
-        
+        window.togglePause = () => {
+            STATE.isPaused = !STATE.isPaused;
+            if (STATE.isPaused) {
+                // Just paused: save accumulated time
+                const now = Date.now();
+                const qId = STATE.currentTestQs[STATE.currentQuestionIndex].id;
+                STATE.timePerQuestion[qId] = (STATE.timePerQuestion[qId] || 0) + (now - STATE.lastQuestionChangeTimestamp)/1000;
+                STATE.lastQuestionChangeTimestamp = null;
+            } else {
+                // Resume
+                STATE.lastQuestionChangeTimestamp = Date.now();
+            }
+            
+            el('pause-overlay').classList.toggle('hidden', !STATE.isPaused);
+            el('pause-test-btn').innerHTML = STATE.isPaused 
+                ? `<i data-lucide="play-circle" class="w-4 h-4"></i> Resume` 
+                : `<i data-lucide="pause-circle" class="w-4 h-4"></i> Pause`;
+            lucide.createIcons();
+            saveSessionState();
+        };
+        el('pause-test-btn').onclick = togglePause;
+
+        // --- RESULT ENGINE ---
+        function finishTest() {
+            clearInterval(STATE.timerInterval);
+            if (STATE.lastQuestionChangeTimestamp) {
+                const now = Date.now();
+                const qId = STATE.currentTestQs[STATE.currentQuestionIndex].id;
+                STATE.timePerQuestion[qId] = (STATE.timePerQuestion[qId] || 0) + (now - STATE.lastQuestionChangeTimestamp)/1000;
+            }
+            clearSessionState();
+            
+            let score = 0, c = 0, w = 0, u = 0;
+            const stats = { Physics: {c:0,w:0,u:0}, Chemistry: {c:0,w:0,u:0}, Math: {c:0,w:0,u:0} };
+
+            STATE.currentTestQs.forEach(q => {
+                const ans = STATE.userResponses[q.id] || [];
+                const key = STATE.answerKey[q.id] || [];
+                const mk = STATE.testSettings.marking[q.type];
+                
+                if(!stats[q.subject]) stats[q.subject] = {c:0,w:0,u:0};
+
+                if(!ans.length || ans[0]==='') {
+                    u++; stats[q.subject].u++;
+                } else {
+                    let correct = false;
+                    if(q.type === 'Numerical') {
+                        correct = Math.abs(parseFloat(ans[0]) - parseFloat(key[0])) < 0.001;
+                    } else {
+                        correct = JSON.stringify([...ans].sort()) === JSON.stringify([...key].sort());
+                    }
+                    
+                    if(correct) { score += mk.correct; c++; stats[q.subject].c++; }
+                    else { score += mk.incorrect; w++; stats[q.subject].w++; }
+                }
+            });
+
+            // Update UI
+            el('total-score').textContent = score;
+            el('correct-count').textContent = c;
+            el('incorrect-count').textContent = w;
+            el('unattempted-count').textContent = u;
+
+            // Time Analysis
+            const totalTime = Object.values(STATE.timePerQuestion).reduce((a,b)=>a+b,0);
+            el('avg-time-overall').textContent = (totalTime / STATE.currentTestQs.length).toFixed(1) + 's';
+            
+            ['Physics','Chemistry','Math'].forEach(sub => {
+                const qs = STATE.currentTestQs.filter(q=>q.subject===sub);
+                const t = qs.reduce((acc,q)=>acc+(STATE.timePerQuestion[q.id]||0),0);
+                const avg = qs.length ? (t/qs.length).toFixed(1) : 0;
+                
+                const idPrefix = sub.toLowerCase() === 'math' ? 'math' : sub.toLowerCase(); 
+                if(el(`avg-time-${idPrefix}`)) el(`avg-time-${idPrefix}`).textContent = avg+'s';
+                
+                const resDiv = el(`${sub.toLowerCase()}-results`);
+                if(resDiv) {
+                    resDiv.innerHTML = `
+                        <h5 class="font-bold mb-3 text-slate-700 dark:text-slate-200 border-b pb-2 dark:border-slate-700">${sub}</h5>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between items-center"><span class="text-green-600 font-medium">Correct</span> <span class="font-bold">${stats[sub].c}</span></div>
+                            <div class="flex justify-between items-center"><span class="text-red-500 font-medium">Incorrect</span> <span class="font-bold">${stats[sub].w}</span></div>
+                            <div class="flex justify-between items-center"><span class="text-slate-400 font-medium">Unattempted</span> <span class="font-bold">${stats[sub].u}</span></div>
+                        </div>`;
+                }
+            });
+
+            renderCharts(c, w, u, stats);
+            renderDetailedReview('all');
+            showPage('result');
+        }
+
+        let charts = {};
         function renderCharts(c, w, u, stats) {
             if(charts.dist) charts.dist.destroy();
             if(charts.sub) charts.sub.destroy();
 
-            const ctx1 = el('chart-distribution').getContext('2d');
-            charts.dist = new Chart(ctx1, {
+            const commonOptions = {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } }
+            };
+
+            charts.dist = new Chart(el('chart-distribution'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Correct', 'Incorrect', 'Unattempted'],
-                    datasets: [{
-                        data: [c, w, u],
-                        backgroundColor: ['#22c55e', '#ef4444', '#94a3b8'],
-                        borderWidth: 0
-                    }]
+                    labels: ['Correct','Incorrect','Unattempted'],
+                    datasets: [{ data: [c,w,u], backgroundColor: ['#22c55e','#ef4444','#94a3b8'], borderWidth:0, hoverOffset: 4 }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                options: commonOptions
             });
 
-            const ctx2 = el('chart-subjects').getContext('2d');
             const subjects = Object.keys(stats);
-            charts.sub = new Chart(ctx2, {
+            charts.sub = new Chart(el('chart-subjects'), {
                 type: 'bar',
                 data: {
                     labels: subjects,
                     datasets: [
-                        { label: 'Correct', data: subjects.map(s => stats[s].c), backgroundColor: '#22c55e' },
-                        { label: 'Incorrect', data: subjects.map(s => stats[s].w), backgroundColor: '#ef4444' }
+                        { label:'Correct', data: subjects.map(s=>stats[s].c), backgroundColor:'#22c55e', borderRadius: 4 },
+                        { label:'Incorrect', data: subjects.map(s=>stats[s].w), backgroundColor:'#ef4444', borderRadius: 4 }
                     ]
                 },
-                options: { 
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' } }, x: { grid: { display: false } } },
-                    plugins: { legend: { position: 'bottom' } }
-                }
+                options: { ...commonOptions, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: '#e2e8f0' } } } }
             });
         }
 
         function renderDetailedReview(filter) {
-            const container = el('review-section'); container.innerHTML = '';
+            const cont = el('review-section'); cont.innerHTML = '';
             STATE.currentTestQs.forEach((q, i) => {
                 const u = STATE.userResponses[q.id] || [];
                 const k = STATE.answerKey[q.id] || [];
                 let status = 'unattempted';
-                let isCorrect = false;
-                if(u.length > 0 && u[0] !== '') {
-                    if(q.type === 'Numerical') isCorrect = Math.abs(parseFloat(u[0]) - parseFloat(k[0])) < 0.0001;
-                    else isCorrect = JSON.stringify([...u].sort()) === JSON.stringify([...k].sort());
-                    status = isCorrect ? 'correct' : 'incorrect';
+                if(u.length && u[0]!=='') {
+                     if(q.type==='Numerical') status = Math.abs(parseFloat(u[0])-parseFloat(k[0]))<0.001 ? 'correct' : 'incorrect';
+                     else status = JSON.stringify([...u].sort()) === JSON.stringify([...k].sort()) ? 'correct' : 'incorrect';
                 }
-                if(filter !== 'all' && filter !== status) return;
-                const timeSpent = STATE.timePerQuestion[q.id] || 0;
                 
+                if(filter!=='all' && filter!==status) return;
+
                 const card = document.createElement('div');
-                const borderClass = status === 'correct' ? 'border-l-green-500 bg-green-50/50 dark:bg-green-900/10' : 
-                                   status === 'incorrect' ? 'border-l-red-500 bg-red-50/50 dark:bg-red-900/10' : 
-                                   'border-l-slate-400 bg-slate-50 dark:bg-slate-800';
-                card.className = `p-4 rounded-xl border border-slate-200 dark:border-slate-700 border-l-4 ${borderClass}`;
+                const colorClass = status==='correct' ? 'border-green-500 bg-green-50/20' : status==='incorrect' ? 'border-red-500 bg-red-50/20' : 'border-slate-300 bg-white dark:bg-slate-800';
+                const icon = status==='correct' ? '<i data-lucide="check" class="text-green-500"></i>' : status==='incorrect' ? '<i data-lucide="x" class="text-red-500"></i>' : '<i data-lucide="minus" class="text-slate-400"></i>';
+
+                let contentHTML = '';
+                if(q.mode === 'text') {
+                    contentHTML = `<div class="p-4 bg-white dark:bg-slate-950/50 border rounded-xl text-lg font-medium">${q.text}</div>`;
+                } else {
+                    contentHTML = `<img src="${q.image}" class="max-h-40 border rounded-xl bg-white mx-auto q-img-invert">`;
+                }
+
+                card.className = `p-6 rounded-2xl border-l-4 shadow-sm ${colorClass} bg-white dark:bg-slate-900 border border-t-slate-100 border-r-slate-100 border-b-slate-100 dark:border-t-slate-800 dark:border-r-slate-800 dark:border-b-slate-800`;
                 card.innerHTML = `
-                    <div class="flex justify-between mb-2">
-                        <span class="font-bold text-sm">Q.${i+1} ${q.subject}</span>
-                        <div class="flex gap-2">
-                            <span class="text-xs font-mono px-2 py-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                                <i data-lucide="clock" class="w-3 h-3"></i> ${timeSpent.toFixed(1)}s
-                            </span>
-                            <span class="text-xs font-mono uppercase px-2 py-1 rounded bg-white dark:bg-black/20">${status}</span>
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-lg">Q${i+1}</span>
+                            <span class="text-xs uppercase font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">${q.subject}</span>
+                        </div>
+                        <div class="flex items-center gap-2 font-bold uppercase text-xs">
+                            ${icon} ${status}
                         </div>
                     </div>
-                    <img src="${q.image}" class="max-h-40 mb-3 border rounded bg-white mx-auto">
-                    <div class="grid grid-cols-2 gap-4 text-sm mt-2 border-t border-slate-200 dark:border-slate-700 pt-2">
-                        <div>
-                            <span class="text-slate-500 block text-xs uppercase font-bold">Your Answer</span> 
-                            <span class="font-mono font-bold ${status==='correct'?'text-green-600':status==='incorrect'?'text-red-500':'text-slate-400'}">
-                                ${u.join(', ') || 'Not Attempted'}
-                            </span>
-                        </div>
-                        <div>
-                            <span class="text-slate-500 block text-xs uppercase font-bold">Correct Answer</span> 
-                            <span class="font-mono font-bold text-green-600">${k.join(', ')}</span>
-                        </div>
+                    ${contentHTML}
+                    <div class="mt-4 grid grid-cols-3 gap-4 text-sm bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl">
+                        <div class="text-center"><div class="text-xs text-slate-400 font-bold uppercase">You</div> <div class="font-mono font-bold text-lg">${u.join(', ')||'-'}</div></div>
+                        <div class="text-center border-l border-r border-slate-200 dark:border-slate-700"><div class="text-xs text-slate-400 font-bold uppercase">Key</div> <div class="font-mono font-bold text-lg text-green-600">${k.join(', ')}</div></div>
+                        <div class="text-center"><div class="text-xs text-slate-400 font-bold uppercase">Time</div> <div class="font-mono font-bold text-lg">${(STATE.timePerQuestion[q.id]||0).toFixed(1)}s</div></div>
                     </div>
                 `;
-                container.appendChild(card);
+                if(q.mode==='text') renderMath(card);
+                cont.appendChild(card);
             });
             lucide.createIcons();
         }
-        
+
+        // --- EXPORT/IMPORT & SETTINGS ---
         document.querySelectorAll('.review-filter-btn').forEach(btn => {
             btn.onclick = function() {
-                document.querySelectorAll('.review-filter-btn').forEach(b => {
-                    b.classList.remove('bg-indigo-600', 'text-white');
-                    b.classList.add('bg-white', 'text-slate-600', 'border');
-                    if(document.documentElement.classList.contains('dark')) b.classList.add('dark:bg-slate-800', 'dark:text-slate-300');
+                document.querySelectorAll('.review-filter-btn').forEach(b=>{
+                    b.classList.remove('bg-indigo-600','text-white');
+                    b.classList.add('bg-white','text-slate-500');
+                    if(document.documentElement.classList.contains('dark')) b.classList.add('dark:bg-slate-800');
                 });
-                this.classList.remove('bg-white', 'text-slate-600', 'border', 'dark:bg-slate-800', 'dark:text-slate-300');
-                this.classList.add('bg-indigo-600', 'text-white');
+                this.classList.remove('bg-white','text-slate-500','dark:bg-slate-800');
+                this.classList.add('bg-indigo-600','text-white');
                 renderDetailedReview(this.dataset.filter);
             }
         });
@@ -1516,219 +1766,331 @@
         el('review-answers-btn').onclick = () => { el('review-controls').classList.remove('hidden'); el('review-controls').scrollIntoView({behavior:'smooth'}); };
         el('back-to-home-btn').onclick = () => showPage('setup');
 
-        // --- ENHANCED PDF REPORT ---
-        el('download-result-btn').onclick = async () => {
-            if(!STATE.currentTestQs.length) return;
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            const pageWidth = doc.internal.pageSize.getWidth();
-
-            // 1. Header
-            doc.setFillColor(79, 70, 229); // Indigo
-            doc.rect(0, 0, pageWidth, 20, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(14);
-            doc.text("CledBT - Detailed Performance Report", 14, 13);
-            
-            // 2. Summary Stats
-            doc.setTextColor(40, 40, 40);
-            doc.setFontSize(10);
-            const score = el('total-score').innerText;
-            const correct = el('correct-count').innerText;
-            const incorrect = el('incorrect-count').innerText;
-            const unatt = el('unattempted-count').innerText;
-            const avgTime = el('avg-time-overall').innerText;
-            const totalTime = (Object.values(STATE.timePerQuestion).reduce((a,b)=>a+b, 0) / 60).toFixed(1) + ' min';
-
-            let yPos = 30;
-            doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, yPos);
-            doc.text(`Total Questions: ${STATE.currentTestQs.length}`, 80, yPos);
-            doc.text(`Duration Used: ${totalTime}`, 140, yPos);
-            yPos += 6;
-            doc.text(`Total Score: ${score}`, 14, yPos);
-            doc.text(`Avg Time/Q: ${avgTime}`, 80, yPos);
-            yPos += 10;
-
-            // 3. Subject Wise Table
-            const subjects = ['Physics', 'Chemistry', 'Math'];
-            const subData = subjects.map(s => {
-                // calculate on fly or retrieve from cached stats if preferred
-                const qs = STATE.currentTestQs.filter(q => q.subject === s);
-                let c=0, w=0, u=0, t=0;
-                qs.forEach(q => {
-                    const ans = STATE.userResponses[q.id] || [];
-                    const key = STATE.answerKey[q.id] || [];
-                    if(!ans.length || ans[0]==='') u++;
-                    else {
-                        let isC = false;
-                        if(q.type==='Numerical') isC = (Math.abs(parseFloat(ans[0])-parseFloat(key[0]))<0.0001);
-                        else isC = JSON.stringify([...ans].sort())===JSON.stringify([...key].sort());
-                        if(isC) c++; else w++;
-                    }
-                    t += (STATE.timePerQuestion[q.id] || 0);
-                });
-                return [s, qs.length, c, w, u, (qs.length ? (t/qs.length).toFixed(1)+'s' : '0s')];
-            });
-
-            doc.autoTable({
-                startY: yPos,
-                head: [['Subject', 'Total Q', 'Correct', 'Incorrect', 'Unattempted', 'Avg Time']],
-                body: subData,
-                theme: 'striped',
-                headStyles: { fillColor: [79, 70, 229] },
-                styles: { fontSize: 9 }
-            });
-
-            yPos = doc.lastAutoTable.finalY + 10;
-
-            // 4. Charts (Capture and Add)
-            if(charts.dist && charts.sub) {
-                try {
-                    const img1 = charts.dist.toBase64Image();
-                    const img2 = charts.sub.toBase64Image();
-                    
-                    // Check if space exists
-                    if (yPos + 80 > doc.internal.pageSize.getHeight()) {
-                        doc.addPage();
-                        yPos = 20;
-                    }
-
-                    doc.setFontSize(10);
-                    doc.text("Performance Distribution", 40, yPos);
-                    doc.text("Subject-wise Accuracy", 130, yPos);
-                    
-                    doc.addImage(img1, 'PNG', 20, yPos + 5, 70, 70);
-                    doc.addImage(img2, 'PNG', 110, yPos + 5, 80, 70);
-                    
-                    yPos += 85;
-                } catch(e) { console.error("Chart capture failed", e); }
-            }
-
-            // 5. Detailed Question Table
-            doc.setFontSize(12);
-            doc.text("Detailed Question Analysis", 14, yPos);
-            yPos += 5;
-
-            const qRows = STATE.currentTestQs.map((q, i) => {
-                const u = STATE.userResponses[q.id] || [];
-                const k = STATE.answerKey[q.id] || [];
-                let status = 'Unattempted';
-                if(u.length && u[0]!=='') {
-                    if(q.type==='Numerical') status = (Math.abs(parseFloat(u[0])-parseFloat(k[0]))<0.0001) ? 'Correct' : 'Incorrect';
-                    else status = (JSON.stringify([...u].sort()) === JSON.stringify([...k].sort())) ? 'Correct' : 'Incorrect';
-                }
-                const time = (STATE.timePerQuestion[q.id] || 0).toFixed(1) + 's';
-                
-                // Add tiny thumb placeholder - adding actual images is heavy, maybe next iteration
-                return [i+1, q.subject, q.type, status, u.join(','), k.join(','), time];
-            });
-
-            doc.autoTable({
-                startY: yPos,
-                head: [['Q#', 'Subject', 'Type', 'Status', 'Your Ans', 'Correct', 'Time']],
-                body: qRows,
-                styles: { fontSize: 8, cellPadding: 2 },
-                headStyles: { fillColor: [51, 65, 85] },
-                columnStyles: {
-                    0: {cellWidth: 10}, 
-                    3: {fontStyle: 'bold'},
-                    6: {halign: 'right'}
-                },
-                didParseCell: function(data) {
-                    if(data.column.index === 3 && data.section === 'body') {
-                        if(data.cell.raw === 'Correct') data.cell.styles.textColor = [34, 197, 94];
-                        if(data.cell.raw === 'Incorrect') data.cell.styles.textColor = [239, 68, 68];
-                    }
-                }
-            });
-
-            doc.save('CBT_Detailed_Report.pdf');
-        };
-
-        // --- UTILS: EXPORT/IMPORT/CLEAR ---
-        el('export-json-btn').onclick = () => {
-            const data = { questions: STATE.questions, answerKey: STATE.answerKey, testSettings: STATE.testSettings };
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type : 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'CBT_Data_Backup.json';
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        };
-
-        el('import-json-input').addEventListener('change', e => {
-            const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = evt => {
-                try {
-                    const data = JSON.parse(evt.target.result);
-                    if(data.questions) STATE.questions = data.questions;
-                    if(data.answerKey) STATE.answerKey = data.answerKey;
-                    if(data.testSettings) STATE.testSettings = data.testSettings;
-                    saveData();
-                    renderQuestionsList();
-                    alert('Data imported successfully!');
-                } catch(err) { alert('Invalid JSON file'); }
-            };
-            reader.readAsText(file);
-            e.target.value = '';
-        });
-        
-        el('download-pdf-btn').onclick = () => {
-            if(!STATE.questions.length) return;
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({orientation:'l', unit:'pt', format:[842, 595]}); 
-            STATE.questions.forEach((q, i) => {
-                if(i>0) doc.addPage();
-                doc.setFontSize(10).text(`Q.${i+1} [${q.subject}] - ${q.type}`, 30, 30);
-                
-                const img = new Image(); img.src = q.image;
-                const r = img.width/img.height;
-                let w = 780, h = w/r;
-                if(h > 450) { h=450; w=h*r; }
-                
-                doc.addImage(q.image, 'JPEG', 421-(w/2), 60, w, h);
-                const k = STATE.answerKey[q.id] ? STATE.answerKey[q.id].join(',') : 'NA';
-                doc.text(`Correct Answer: ${k}`, 800, 550, {align:'right'});
-            });
-            doc.save('CBT_Questions_Bank.pdf');
-        };
-
-        // --- SETTINGS UI ---
         el('settings-btn').onclick = () => {
-            const ts = STATE.testSettings;
-            el('test-duration').value = ts.duration;
-            el('scq-correct').value = ts.marking.SingleCorrect.correct;
-            el('scq-incorrect').value = ts.marking.SingleCorrect.incorrect;
-            el('mcq-correct').value = ts.marking.MultipleCorrect.correct;
-            el('mcq-incorrect').value = ts.marking.MultipleCorrect.incorrect;
-            el('num-correct').value = ts.marking.Numerical.correct;
-            el('num-incorrect').value = ts.marking.Numerical.incorrect;
+            el('set-title').value = STATE.testSettings.title;
+            el('set-desc').value = STATE.testSettings.description;
+            el('test-duration').value = STATE.testSettings.duration;
+            el('scq-correct').value = STATE.testSettings.marking.SingleCorrect.correct;
+            el('scq-incorrect').value = STATE.testSettings.marking.SingleCorrect.incorrect;
+            el('mcq-correct').value = STATE.testSettings.marking.MultipleCorrect.correct;
+            el('mcq-incorrect').value = STATE.testSettings.marking.MultipleCorrect.incorrect;
+            el('num-correct').value = STATE.testSettings.marking.Numerical.correct;
+            el('num-incorrect').value = STATE.testSettings.marking.Numerical.incorrect;
             el('settings-modal').classList.remove('hidden');
         };
         el('settings-cancel-btn').onclick = () => el('settings-modal').classList.add('hidden');
         el('settings-save-btn').onclick = () => {
-            STATE.testSettings.duration = parseInt(el('test-duration').value) || 180;
-            STATE.testSettings.marking.SingleCorrect.correct = parseFloat(el('scq-correct').value) || 4;
-            STATE.testSettings.marking.SingleCorrect.incorrect = parseFloat(el('scq-incorrect').value) || -1;
-            STATE.testSettings.marking.MultipleCorrect.correct = parseFloat(el('mcq-correct').value) || 4;
-            STATE.testSettings.marking.MultipleCorrect.incorrect = parseFloat(el('mcq-incorrect').value) || -1;
-            STATE.testSettings.marking.Numerical.correct = parseFloat(el('num-correct').value) || 4;
-            STATE.testSettings.marking.Numerical.incorrect = parseFloat(el('num-incorrect').value) || 0;
+            STATE.testSettings.title = el('set-title').value;
+            STATE.testSettings.description = el('set-desc').value;
+            STATE.testSettings.duration = el('test-duration').value;
+            STATE.testSettings.marking.SingleCorrect.correct = parseFloat(el('scq-correct').value)||4;
+            STATE.testSettings.marking.SingleCorrect.incorrect = parseFloat(el('scq-incorrect').value)||-1;
+            STATE.testSettings.marking.MultipleCorrect.correct = parseFloat(el('mcq-correct').value)||4;
+            STATE.testSettings.marking.MultipleCorrect.incorrect = parseFloat(el('mcq-incorrect').value)||-1;
+            STATE.testSettings.marking.Numerical.correct = parseFloat(el('num-correct').value)||4;
+            STATE.testSettings.marking.Numerical.incorrect = parseFloat(el('num-incorrect').value)||0;
             saveData();
+            updateDisplayInfo();
             el('settings-modal').classList.add('hidden');
         };
+        el('clear-data-btn').onclick = () => { if(confirm("DANGER: This will delete ALL questions and settings. Are you sure?")) { localStorage.clear(); location.reload(); }};
         
-        el('clear-data-btn').onclick = () => {
-            if(confirm('DANGER: This will delete ALL questions and settings. Are you sure?')) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
+        el('export-json-btn').onclick = () => {
+            const blob = new Blob([JSON.stringify(STATE)], {type:'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='CBT_Backup.json'; a.click();
+        };
+        el('import-json-input').onchange = (e) => {
+            const fr = new FileReader();
+            fr.onload = (ev) => {
+                const d = JSON.parse(ev.target.result);
+                if(d.questions) STATE.questions = d.questions.map(normalizeQuestion);
+                if(d.answerKey) STATE.answerKey = d.answerKey;
+                if(d.testSettings) STATE.testSettings = d.testSettings;
+                saveData(); loadData();
+            };
+            fr.readAsText(e.target.files[0]);
+        };
 
-        // --- INITIALIZATION ---
+        // --- NEW DETAILED PDF REPORT GENERATOR ---
+        el('download-result-btn').onclick = () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // --- HEADER ---
+            doc.setFillColor(79, 70, 229); 
+            doc.rect(0, 0, 210, 30, 'F');
+            doc.setTextColor(255, 255, 255); 
+            doc.setFontSize(22); 
+            doc.setFont("helvetica", "bold");
+            doc.text("Performance Report", 14, 20);
+            
+            doc.setFontSize(10); 
+            doc.setFont("helvetica", "normal");
+            doc.text(`Test: ${STATE.testSettings.title}`, 140, 15, {align: 'right'});
+            doc.text(`Date: ${new Date().toLocaleDateString()}`, 140, 22, {align: 'right'});
+
+            // --- SCORE CARD SUMMARY ---
+            const totalQ = STATE.currentTestQs.length;
+            const score = el('total-score').textContent;
+            const correct = el('correct-count').textContent;
+            const incorrect = el('incorrect-count').textContent;
+            const accuracy = totalQ > 0 ? Math.round((correct / totalQ) * 100) : 0;
+            const timeStr = el('avg-time-overall').textContent;
+
+            // Stats Box
+            doc.setFillColor(245, 247, 255);
+            doc.setDrawColor(200, 200, 255);
+            doc.roundedRect(14, 40, 182, 35, 3, 3, 'FD');
+
+            doc.setTextColor(60, 60, 60);
+            doc.setFontSize(10);
+            doc.text("Total Score", 30, 50);
+            doc.setFontSize(16); doc.setTextColor(79, 70, 229); doc.setFont("helvetica", "bold");
+            doc.text(score, 30, 65);
+
+            doc.setFontSize(10); doc.setTextColor(60, 60, 60); doc.setFont("helvetica", "normal");
+            doc.text("Accuracy", 80, 50);
+            doc.setFontSize(16); doc.setTextColor(34, 197, 94); doc.setFont("helvetica", "bold");
+            doc.text(accuracy + "%", 80, 65);
+
+            doc.setFontSize(10); doc.setTextColor(60, 60, 60); doc.setFont("helvetica", "normal");
+            doc.text("Attempted", 130, 50);
+            doc.setFontSize(16); doc.setTextColor(60, 60, 60); doc.setFont("helvetica", "bold");
+            doc.text(`${parseInt(correct) + parseInt(incorrect)} / ${totalQ}`, 130, 65);
+            
+            // --- SUBJECT BREAKDOWN TABLE ---
+            doc.setFontSize(12); doc.setTextColor(0,0,0); doc.setFont("helvetica", "bold");
+            doc.text("Subject Breakdown", 14, 90);
+            
+            const subjects = ['Physics', 'Chemistry', 'Math'];
+            const subData = subjects.map(sub => {
+                const qs = STATE.currentTestQs.filter(q => q.subject === sub);
+                if(qs.length === 0) return null;
+                
+                let c = 0, w = 0, u = 0, s = 0;
+                qs.forEach(q => {
+                   const mk = STATE.testSettings.marking[q.type];
+                   const usr = STATE.userResponses[q.id];
+                   const key = STATE.answerKey[q.id];
+                   if(!usr || usr[0]==='') u++;
+                   else {
+                       let isC = false;
+                       if(q.type==='Numerical') isC = Math.abs(parseFloat(usr[0])-parseFloat(key[0])) < 0.001;
+                       else isC = JSON.stringify([...usr].sort()) === JSON.stringify([...key].sort());
+                       
+                       if(isC) { c++; s += mk.correct; } else { w++; s += mk.incorrect; }
+                   }
+                });
+                return [sub, qs.length, c, w, s];
+            }).filter(Boolean);
+
+            doc.autoTable({
+                startY: 95,
+                head: [['Subject', 'Questions', 'Correct', 'Incorrect', 'Score']],
+                body: subData,
+                theme: 'striped',
+                headStyles: { fillColor: [79, 70, 229] },
+            });
+
+            // --- DETAILED QUESTION LOG ---
+            const finalY = doc.lastAutoTable.finalY + 15;
+            doc.setFontSize(12); doc.text("Detailed Question Log", 14, finalY);
+
+            const detailRows = STATE.currentTestQs.map((q,i) => {
+                const u = STATE.userResponses[q.id]||[];
+                const k = STATE.answerKey[q.id]||[];
+                let status = 'Unattempted';
+                if(u.length && u[0]!=='') {
+                    if(q.type==='Numerical') status = Math.abs(parseFloat(u[0])-parseFloat(k[0]))<0.001 ? 'Correct' : 'Incorrect';
+                    else status = JSON.stringify([...u].sort()) === JSON.stringify([...k].sort()) ? 'Correct' : 'Incorrect';
+                }
+                return [i+1, q.subject, q.type, status, u.join(', ') || '-', k.join(', ')];
+            });
+            
+            doc.autoTable({
+                startY: finalY + 5,
+                head: [['#','Subject','Type','Status','User Ans','Key']],
+                body: detailRows,
+                headStyles: { fillColor: [100, 100, 100] },
+                alternateRowStyles: { fillColor: [240, 240, 240] },
+                columnStyles: {
+                    3: { fontStyle: 'bold' } // Status column
+                },
+                didParseCell: function(data) {
+                    if (data.section === 'body' && data.column.index === 3) {
+                        if (data.cell.raw === 'Correct') data.cell.styles.textColor = [34, 197, 94];
+                        if (data.cell.raw === 'Incorrect') data.cell.styles.textColor = [239, 68, 68];
+                    }
+                }
+            });
+            
+            doc.save('Detailed_Report.pdf');
+        };
+
+        // --- NEW 16:9 SLIDES PDF GENERATOR (UPDATED FOR DARK MODE & MINIMAL DESIGN) ---
+        el('download-slides-btn').onclick = async () => {
+            if(!STATE.questions.length) return alert("No questions to export!");
+            
+            const btn = el('download-slides-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Processing...`;
+            showLoading("Generating Slides...");
+
+            try {
+                const isDark = document.documentElement.classList.contains('dark');
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({orientation: 'l', unit: 'pt', format: [842, 474]}); 
+                const W = 842, H = 474;
+                const ghost = el('ghost-render-container');
+
+                // Helper to invert images for Dark Mode PDF
+                const invertImage = async (imgSrc) => {
+                    return new Promise(resolve => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.filter = 'invert(1) hue-rotate(180deg)';
+                            ctx.drawImage(img, 0, 0);
+                            resolve({src: canvas.toDataURL('image/jpeg'), w: img.width, h: img.height});
+                        };
+                        img.src = imgSrc;
+                    });
+                };
+                
+                // Helper to get image dims without processing
+                const getImageDims = async (imgSrc) => {
+                    return new Promise(resolve => {
+                        const img = new Image();
+                        img.onload = () => resolve({src: imgSrc, w: img.width, h: img.height});
+                        img.src = imgSrc;
+                    });
+                };
+
+                for (let i = 0; i < STATE.questions.length; i++) {
+                    const q = STATE.questions[i];
+                    if (i > 0) doc.addPage();
+
+                    // --- SLIDE THEME ---
+                    if (isDark) {
+                        doc.setFillColor(15, 23, 42); // Slate-900 Background
+                        doc.rect(0, 0, W, H, 'F');
+                        doc.setFillColor(30, 41, 59); // Slate-800 Header
+                    } else {
+                        doc.setFillColor(255, 255, 255); // White Background
+                        doc.rect(0, 0, W, H, 'F');
+                        doc.setFillColor(79, 70, 229); // Indigo Header
+                    }
+                    
+                    // --- MINIMAL HEADER ---
+                    doc.rect(0, 0, W, 40, 'F'); 
+                    
+                    doc.setFontSize(16); 
+                    doc.setTextColor(255, 255, 255); 
+                    doc.setFont("helvetica", "bold");
+                    doc.text(`Question ${i+1}`, 30, 26);
+                    
+                    doc.setFontSize(11); 
+                    doc.setFont("helvetica", "normal");
+                    doc.text(`${q.subject}  |  ${q.type}`, W - 30, 26, {align: 'right'});
+
+                    // --- CONTENT RENDERING ---
+                    const margin = 40;
+                    const contentW = W - (margin * 2);
+                    const contentH = H - 80; // Leaving space for header/footer
+                    const maxContentH = contentH * 0.7; // Max 70% height constraint
+
+                    let imgData = null, imgW = 0, imgH = 0;
+
+                    if (q.mode === 'image') {
+                        // Handle Image Inversion if Dark Mode
+                        const res = isDark ? await invertImage(q.image) : await getImageDims(q.image);
+                        imgData = res.src;
+                        imgW = res.w;
+                        imgH = res.h;
+                    } else {
+                        // Handle Text (HTML2Canvas)
+                        // Style ghost for PDF Theme
+                        const txtColor = isDark ? '#e2e8f0' : '#1e293b';
+                        const bgColor = isDark ? '#0f172a' : '#ffffff';
+                        const optBg = isDark ? '#1e293b' : '#f8fafc';
+                        const optBorder = isDark ? '#334155' : '#e2e8f0';
+
+                        let html = `
+                            <div style="font-size: 26px; color: ${txtColor}; line-height: 1.5; margin-bottom: 30px; background: ${bgColor}; padding: 10px;">
+                                ${(q.text || '').replace(/\n/g, '<br>')}
+                            </div>
+                        `;
+                        
+                        if(q.type !== 'Numerical' && q.options) {
+                            html += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">`;
+                            q.options.forEach((opt, idx) => {
+                                if(opt) html += `
+                                    <div style="background: ${optBg}; border: 2px solid ${optBorder}; color: ${txtColor}; padding: 15px; border-radius: 12px; font-size: 20px; display: flex; align-items: flex-start; gap: 15px;">
+                                        <span style="background: #4f46e5; color: white; padding: 2px 10px; border-radius: 6px; font-weight: bold; font-size: 18px; margin-top: 2px;">${['A','B','C','D'][idx]}</span> 
+                                        <span>${opt}</span>
+                                    </div>`;
+                            });
+                            html += `</div>`;
+                        } else if (q.type === 'Numerical') {
+                             html += `<div style="margin-top: 40px; border: 3px dashed ${optBorder}; padding: 30px; border-radius: 12px; text-align: center; color: #94a3b8; font-size: 24px; font-weight: bold;">NUMERICAL ANSWER TYPE</div>`;
+                        }
+
+                        ghost.innerHTML = html;
+                        ghost.style.background = bgColor; // Ensure capture bg is correct
+                        
+                        renderMathInElement(ghost, {
+                            delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}],
+                            throwOnError: false
+                        });
+
+                        await new Promise(r => setTimeout(r, 100)); // Wait for render
+                        const canvas = await html2canvas(ghost, { scale: 2, useCORS: true, backgroundColor: bgColor });
+                        imgData = canvas.toDataURL('image/jpeg', 0.95);
+                        imgW = canvas.width;
+                        imgH = canvas.height;
+                    }
+
+                    // Calculate fitting dimensions
+                    const imgRatio = imgW / imgH;
+                    let finalW = contentW;
+                    let finalH = contentW / imgRatio;
+
+                    // Constrain Height
+                    if (finalH > maxContentH) {
+                        finalH = maxContentH;
+                        finalW = maxContentH * imgRatio;
+                    }
+
+                    // Center on page
+                    const x = (W - finalW) / 2;
+                    const y = 50 + (contentH - finalH) / 2; 
+
+                    doc.addImage(imgData, 'JPEG', x, y, finalW, finalH);
+
+                    // --- FOOTER ---
+                    doc.setFontSize(10); doc.setTextColor(148, 163, 184); // Slate-400
+                    doc.text("Generated by CledBT Simulator", 30, H - 15);
+                    
+                    const k = STATE.answerKey[q.id] ? STATE.answerKey[q.id].join(', ') : 'Not Set';
+                    doc.text(`Key: ${k}`, W - 30, H - 15, {align: 'right'});
+                }
+                
+                doc.save(`${(STATE.testSettings.title||'Test').replace(/\s+/g,'_')}_Slides.pdf`);
+            } catch(e) {
+                console.error(e);
+                alert("Error generating slides. Please check console.");
+            } finally {
+                hideLoading();
+                btn.innerHTML = originalText;
+                el('ghost-render-container').innerHTML = ''; 
+            }
+        };
+
+        // --- INIT ---
         loadData();
-        applyTheme(localStorage.getItem('theme') || 'light');
     </script>
 </body>
 </html>
