@@ -187,7 +187,6 @@
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300 font-sans selection:bg-indigo-100 dark:selection:bg-indigo-900 selection:text-indigo-900 dark:selection:text-indigo-100">
 
     <!-- Loading Overlay -->
-    <!-- Fixed: Added style="display: none" and flex classes to prevent it from sticking -->
     <div id="loading-overlay" style="display: none;" class="hidden flex items-center justify-center">
         <div class="flex flex-col items-center">
             <div class="spinner mb-4"></div>
@@ -1927,158 +1926,134 @@
             doc.save('Detailed_Report.pdf');
         };
 
-        // --- NEW 16:9 SLIDES PDF GENERATOR (UPDATED FOR DARK MODE & MINIMAL DESIGN) ---
+        // --- NEW SLIDES PDF (VECTOR + MATH) ---
         el('download-slides-btn').onclick = async () => {
             if(!STATE.questions.length) return alert("No questions to export!");
             
             const btn = el('download-slides-btn');
             const originalText = btn.innerHTML;
             btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Processing...`;
-            showLoading("Generating Slides...");
+            showLoading("Generating Vector Slides...");
 
             try {
                 const isDark = document.documentElement.classList.contains('dark');
+                const bgHex = isDark ? '#000000' : '#ffffff';
+                const textHex = isDark ? '#ffffff' : '#000000';
+                const secTextHex = isDark ? '#a0a0a0' : '#64748b'; 
+
                 const { jsPDF } = window.jspdf;
+                // Use Landscape 842x474 pt (approx 16:9 ratio fit for A4 width)
                 const doc = new jsPDF({orientation: 'l', unit: 'pt', format: [842, 474]}); 
                 const W = 842, H = 474;
-                const ghost = el('ghost-render-container');
 
-                // Helper to invert images for Dark Mode PDF
-                const invertImage = async (imgSrc) => {
-                    return new Promise(resolve => {
-                        const img = new Image();
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            canvas.width = img.width;
-                            canvas.height = img.height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.filter = 'invert(1) hue-rotate(180deg)';
-                            ctx.drawImage(img, 0, 0);
-                            resolve({src: canvas.toDataURL('image/jpeg'), w: img.width, h: img.height});
-                        };
-                        img.src = imgSrc;
-                    });
-                };
+                // --- 1. TITLE SLIDE ---
+                doc.setFillColor(bgHex);
+                doc.rect(0, 0, W, H, 'F');
+                doc.setTextColor(textHex);
+
+                doc.setFontSize(28); 
+                doc.setFont("helvetica", "bold");
+                doc.text(STATE.testSettings.title || "Test Paper", W/2, H/2 - 30, {align: 'center'});
                 
-                // Helper to get image dims without processing
-                const getImageDims = async (imgSrc) => {
-                    return new Promise(resolve => {
-                        const img = new Image();
-                        img.onload = () => resolve({src: imgSrc, w: img.width, h: img.height});
-                        img.src = imgSrc;
-                    });
-                };
+                doc.setFontSize(14); 
+                doc.setFont("helvetica", "normal");
+                if(STATE.testSettings.description) {
+                    doc.text(STATE.testSettings.description, W/2, H/2 + 10, {align: 'center', maxWidth: 600});
+                }
+                
+                doc.setTextColor(secTextHex);
+                doc.setFontSize(12);
+                doc.text(`Duration: ${STATE.testSettings.duration} mins  |  Questions: ${STATE.questions.length}`, W/2, H/2 + 50, {align: 'center'});
+
+                // --- 2. QUESTIONS LOOP ---
+                const ghost = el('ghost-render-container');
+                ghost.style.width = '760px'; // Match rendering width
 
                 for (let i = 0; i < STATE.questions.length; i++) {
                     const q = STATE.questions[i];
-                    if (i > 0) doc.addPage();
+                    doc.addPage();
+                    
+                    // Background
+                    doc.setFillColor(bgHex);
+                    doc.rect(0, 0, W, H, 'F');
+                    
+                    // Header (Vector Text)
+                    doc.setTextColor(textHex);
+                    doc.setFontSize(16); doc.setFont("helvetica", "bold");
+                    doc.text(`Question ${i+1}`, 40, 40);
+                    
+                    doc.setFontSize(12); doc.setFont("helvetica", "normal");
+                    doc.text(`${q.subject} | ${q.type}`, W - 40, 40, {align: 'right'});
 
-                    // --- SLIDE THEME ---
-                    if (isDark) {
-                        doc.setFillColor(15, 23, 42); // Slate-900 Background
-                        doc.rect(0, 0, W, H, 'F');
-                        doc.setFillColor(30, 41, 59); // Slate-800 Header
+                    // Prepare HTML Content
+                    ghost.innerHTML = '';
+                    const container = document.createElement('div');
+                    container.style.fontFamily = 'Inter, sans-serif';
+                    container.style.color = textHex;
+                    container.style.fontSize = '18px';
+                    container.style.lineHeight = '1.6';
+                    container.style.width = '100%'; 
+
+                    if(q.mode === 'image') {
+                        // Image mode: Embed image directly in HTML to respect dark mode filters if needed
+                        const imgFilter = isDark ? 'filter: invert(1) hue-rotate(180deg);' : '';
+                        container.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; min-height: 250px;">
+                            <img src="${q.image}" style="max-width: 100%; max-height: 300px; border-radius: 8px; ${imgFilter}">
+                        </div>`;
                     } else {
-                        doc.setFillColor(255, 255, 255); // White Background
-                        doc.rect(0, 0, W, H, 'F');
-                        doc.setFillColor(79, 70, 229); // Indigo Header
-                    }
-                    
-                    // --- MINIMAL HEADER ---
-                    doc.rect(0, 0, W, 40, 'F'); 
-                    
-                    doc.setFontSize(16); 
-                    doc.setTextColor(255, 255, 255); 
-                    doc.setFont("helvetica", "bold");
-                    doc.text(`Question ${i+1}`, 30, 26);
-                    
-                    doc.setFontSize(11); 
-                    doc.setFont("helvetica", "normal");
-                    doc.text(`${q.subject}  |  ${q.type}`, W - 30, 26, {align: 'right'});
-
-                    // --- CONTENT RENDERING ---
-                    const margin = 40;
-                    const contentW = W - (margin * 2);
-                    const contentH = H - 80; // Leaving space for header/footer
-                    const maxContentH = contentH * 0.7; // Max 70% height constraint
-
-                    let imgData = null, imgW = 0, imgH = 0;
-
-                    if (q.mode === 'image') {
-                        // Handle Image Inversion if Dark Mode
-                        const res = isDark ? await invertImage(q.image) : await getImageDims(q.image);
-                        imgData = res.src;
-                        imgW = res.w;
-                        imgH = res.h;
-                    } else {
-                        // Handle Text (HTML2Canvas)
-                        // Style ghost for PDF Theme
-                        const txtColor = isDark ? '#e2e8f0' : '#1e293b';
-                        const bgColor = isDark ? '#0f172a' : '#ffffff';
-                        const optBg = isDark ? '#1e293b' : '#f8fafc';
-                        const optBorder = isDark ? '#334155' : '#e2e8f0';
-
-                        let html = `
-                            <div style="font-size: 26px; color: ${txtColor}; line-height: 1.5; margin-bottom: 30px; background: ${bgColor}; padding: 10px;">
-                                ${(q.text || '').replace(/\n/g, '<br>')}
-                            </div>
-                        `;
+                        // Text Mode: Math + Options
+                        let htmlContent = `<div style="margin-bottom: 30px;">${(q.text||'').replace(/\n/g, '<br>')}</div>`;
                         
-                        if(q.type !== 'Numerical' && q.options) {
-                            html += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">`;
+                        if(q.type === 'Numerical') {
+                            htmlContent += `<div style="margin-top: 40px; border: 2px dashed ${secTextHex}; padding: 20px; border-radius: 12px; text-align: center; color: ${secTextHex}; font-weight: bold;">NUMERICAL ANSWER TYPE</div>`;
+                        } else {
+                            htmlContent += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">`;
                             q.options.forEach((opt, idx) => {
-                                if(opt) html += `
-                                    <div style="background: ${optBg}; border: 2px solid ${optBorder}; color: ${txtColor}; padding: 15px; border-radius: 12px; font-size: 20px; display: flex; align-items: flex-start; gap: 15px;">
-                                        <span style="background: #4f46e5; color: white; padding: 2px 10px; border-radius: 6px; font-weight: bold; font-size: 18px; margin-top: 2px;">${['A','B','C','D'][idx]}</span> 
+                                if(opt) {
+                                    const lblColor = isDark ? '#818cf8' : '#4f46e5';
+                                    htmlContent += `<div style="display: flex; gap: 12px; align-items: flex-start;">
+                                        <span style="font-weight: bold; color: ${lblColor}; flex-shrink: 0;">${['A','B','C','D'][idx]}.</span>
                                         <span>${opt}</span>
                                     </div>`;
+                                }
                             });
-                            html += `</div>`;
-                        } else if (q.type === 'Numerical') {
-                             html += `<div style="margin-top: 40px; border: 3px dashed ${optBorder}; padding: 30px; border-radius: 12px; text-align: center; color: #94a3b8; font-size: 24px; font-weight: bold;">NUMERICAL ANSWER TYPE</div>`;
+                            htmlContent += `</div>`;
                         }
-
-                        ghost.innerHTML = html;
-                        ghost.style.background = bgColor; // Ensure capture bg is correct
-                        
-                        renderMathInElement(ghost, {
-                            delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}],
-                            throwOnError: false
-                        });
-
-                        await new Promise(r => setTimeout(r, 100)); // Wait for render
-                        const canvas = await html2canvas(ghost, { scale: 2, useCORS: true, backgroundColor: bgColor });
-                        imgData = canvas.toDataURL('image/jpeg', 0.95);
-                        imgW = canvas.width;
-                        imgH = canvas.height;
+                        container.innerHTML = htmlContent;
                     }
 
-                    // Calculate fitting dimensions
-                    const imgRatio = imgW / imgH;
-                    let finalW = contentW;
-                    let finalH = contentW / imgRatio;
-
-                    // Constrain Height
-                    if (finalH > maxContentH) {
-                        finalH = maxContentH;
-                        finalW = maxContentH * imgRatio;
-                    }
-
-                    // Center on page
-                    const x = (W - finalW) / 2;
-                    const y = 50 + (contentH - finalH) / 2; 
-
-                    doc.addImage(imgData, 'JPEG', x, y, finalW, finalH);
-
-                    // --- FOOTER ---
-                    doc.setFontSize(10); doc.setTextColor(148, 163, 184); // Slate-400
-                    doc.text("Generated by CledBT Simulator", 30, H - 15);
+                    ghost.appendChild(container);
+                    renderMath(ghost);
                     
+                    // Wait for fonts
+                    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+
+                    // Render HTML to PDF Canvas
+                    // Wrapped in Promise to ensure sequential execution
+                    await new Promise(resolve => {
+                        doc.html(container, {
+                            callback: resolve,
+                            x: 40,
+                            y: 60,
+                            width: 760, // Content width (842 - 40 - 40 margins approx)
+                            windowWidth: 760, // Viewport width for HTML render
+                            html2canvas: {
+                                scale: 2, // 2x resolution for sharpness
+                                backgroundColor: null // Transparent to keep doc bg
+                            },
+                            autoPaging: false // We manage pages manually
+                        });
+                    });
+
+                    // Footer (Vector Text)
+                    doc.setFontSize(10); 
+                    doc.setTextColor(secTextHex);
                     const k = STATE.answerKey[q.id] ? STATE.answerKey[q.id].join(', ') : 'Not Set';
-                    doc.text(`Key: ${k}`, W - 30, H - 15, {align: 'right'});
+                    doc.text(`Key: ${k}`, W - 40, H - 20, {align: 'right'});
                 }
                 
                 doc.save(`${(STATE.testSettings.title||'Test').replace(/\s+/g,'_')}_Slides.pdf`);
+
             } catch(e) {
                 console.error(e);
                 alert("Error generating slides. Please check console.");
